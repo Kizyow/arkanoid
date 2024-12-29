@@ -1,9 +1,16 @@
 (* ouvre la bibliotheque de modules definis dans lib/ *)
 open Libnewtonoid
 open Iterator
+open EtatJeu
+open EtatBalle
 
 (* exemple d'ouvertue d'un tel module de la bibliotheque : *)
 open Game
+open Input
+
+
+type etatBalle = EtatBalle.t
+type etatJeu = EtatJeu.t
 
 module Init = struct
   let dt = 1000. /. 60. (* 60 Hz *)
@@ -23,10 +30,12 @@ let graphic_format =
     (int_of_float ((2. *. Box.marge) +. Box.supx -. Box.infx))
     (int_of_float ((2. *. Box.marge) +. Box.supy -. Box.infy))
 
-let draw_state etat = failwith "A DEFINIR"
+    let draw_state (etat: etatJeu) =
+      let (x,y) = EtatJeu.position_balle etat in
+      Graphics.draw_circle (int_of_float x) (int_of_float y) 5
 
 (* extrait le score courant d'un etat : *)
-let score etat : int = failwith "A DEFINIR"
+let score etat : int = EtatJeu.score etat
 
 let draw flux_etat =
   let rec loop flux_etat last_score =
