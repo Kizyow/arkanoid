@@ -13,7 +13,7 @@ type etatBalle = EtatBalle.t
 type etatJeu = EtatJeu.t
 
 module Init = struct
-  let dt = 1000. /. 60. (* 60 Hz *)
+  let dt = (1000. /. 60.)/. 600. (* 60 Hz *)
 end
 
 module Box = struct
@@ -30,9 +30,9 @@ let graphic_format =
     (int_of_float ((2. *. Box.marge) +. Box.supx -. Box.infx))
     (int_of_float ((2. *. Box.marge) +. Box.supy -. Box.infy))
 
-    let draw_state (etat: etatJeu) =
-      let (x,y) = EtatJeu.position_balle etat in
-      Graphics.draw_circle (int_of_float x) (int_of_float y) 5
+let draw_state (etat: etatJeu) =
+  let (x,y) = EtatJeu.position_balle etat in
+  Graphics.draw_circle (int_of_float x) (int_of_float y) 5
 
 (* extrait le score courant d'un etat : *)
 let score etat : int = EtatJeu.score etat
@@ -40,11 +40,14 @@ let score etat : int = EtatJeu.score etat
 let draw flux_etat =
   let rec loop flux_etat last_score =
     match Flux.(uncons flux_etat) with
-    | None -> last_score
+    | None -> 
+    print_endline "none\n";
+    last_score
     | Some (etat, flux_etat') ->
       Graphics.clear_graph ();
       (* DESSIN ETAT *)
       draw_state etat;
+      print_endline "hell\n";
       (* FIN DESSIN ETAT *)
       Graphics.synchronize ();
       Unix.sleepf Init.dt;
@@ -57,7 +60,7 @@ let draw flux_etat =
   Format.printf "Score final : %d@\n" score;
   Graphics.close_graph ()
 
-let () = game_hello ()
+(*let () = game_hello ()*)
 
 (* Fonction qui intègre/somme les valeurs successives du flux *)
 (* avec un pas de temps dt et une valeur initiale nulle, i.e. *)
@@ -182,7 +185,7 @@ struct
     )  
 end
 
-module Game =
+module Jeu =
 struct 
 (* Mettre en place une continuation pour chaque déplacement de souris
     et chaque touche de bloc pour incrémenter score et exploser bloc ?*)
@@ -200,10 +203,10 @@ struct
       Flux.append etatJeuFlux (run etatJeuBalleSuivante)
 end
 
-let truc () = 
-  let position0 = (200.,300.) in
-  let vitesse0 = (20.,100.) in
-  let acceleration0 = (0.,-9.81) in
+let () = 
+  let position0 = (200.,210.) in
+  let vitesse0 = (600.,300.) in
+  let acceleration0 = (0.,-90.81) in
   let etatBalle = EtatBalle.initialiser position0 vitesse0 acceleration0 in
   let etatJeu = (EtatJeu.initialiser etatBalle 0 5) in
-  draw (Game.run etatJeu)
+  draw (Jeu.run etatJeu)
