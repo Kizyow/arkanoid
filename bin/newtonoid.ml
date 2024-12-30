@@ -40,14 +40,11 @@ let score etat : int = EtatJeu.score etat
 let draw flux_etat =
   let rec loop flux_etat last_score =
     match Flux.(uncons flux_etat) with
-    | None -> 
-    print_endline "none\n";
-    last_score
+    | None -> last_score
     | Some (etat, flux_etat') ->
       Graphics.clear_graph ();
       (* DESSIN ETAT *)
       draw_state etat;
-      print_endline "hell\n";
       (* FIN DESSIN ETAT *)
       Graphics.synchronize ();
       Unix.sleepf Init.dt;
