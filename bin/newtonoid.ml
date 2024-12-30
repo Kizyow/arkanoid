@@ -91,10 +91,6 @@ struct
     Flux.map3 (fun pos vit acc -> EtatBalle.initialiser pos vit acc) positionFlux vitesseFlux accFlux
 end
 
-(* Module représentant une balle qui se déplace dans l'espace et rebondit sur les bords du cadre de jeu. *)
-module Bouncing =
-struct
-
   (* Fonction qui filtre et transforme les éléments d'un flux en fonction d'une condition *)
   (* Si un élément satisfait la condition, il est transformé par une fonction donnée.     *)
   (* Sinon, il est laissé inchangé.                                                       *)
@@ -114,6 +110,10 @@ struct
               else
                 Some(t,unless q cond f_cond))
         )
+
+(* Module représentant une balle qui se déplace dans l'espace et rebondit sur les bords du cadre de jeu. *)
+module Bouncing =
+struct
 
   (* Fonction qui détecte un contact en une dimension. *)
   (* Si la balle touche une des bornes, elle retourne vrai. *)
@@ -166,28 +166,41 @@ struct
   (* Sinon, elle continue son mouvement. *)
   (* paramètres:                                                                          *)
   (* etatBalle0 : (float * float) * (float * float)  * (float * float)                         *)
-  let rec run etatBalle0 score =
+  let rec run (etatBalle0:etatBalle)=
     unless (FreeFall.run etatBalle0) contact (fun etatBalle ->
       if contact_sol etatBalle then
-        (* Si on touche le sol, on perd une vie et on relance une balle *)
+        Flux.vide
+        (* Si on touche le sol, on perd une vie et on relance une balle
         let acc0 = (0., -9.81) in
         let position0 = (200., 300.) in
         let vitesse0 = (20., -100.) in
         let etatBalle0 = EtatBalle.initialiser position0 vitesse0 acc0 in
-        (run etatBalle0 (score+10))
+        (run etatBalle0 (score+10)) *)
       else
         (* En cas de rebond contre un mur, on augmente l'accélération de 0.05*)
-        run (rebond etatBalle (0.5, 0.5)) score
+        run (rebond etatBalle (0.5, 0.5))
     )  
 end
 
 module Game =
-struct
-  let rec run etatJeu = 
-    failwith "todo"
+struct 
+(* Mettre en place une continuation pour chaque déplacement de souris
+    et chaque touche de bloc pour incrémenter score et exploser bloc ?*)
+  let rec run (etatJeu:etatJeu) : etatJeu flux = 
+    let nbVies = EtatJeu.vies etatJeu in
+    if nbVies<1 then Flux.vide
+    else
+      let score = EtatJeu.score etatJeu in
+      let balleInit = EtatJeu.balle etatJeu in
+      let etatBalleFlux = Bouncing.run (EtatJeu.balle etatJeu) in
+      let etatJeuFlux = Flux.map (fun etatBalle ->
+          EtatJeu.initialiser etatBalle (EtatJeu.score etatJeu) nbVies
+        ) etatBalleFlux in
+      let etatJeuBalleSuivante = EtatJeu.initialiser balleInit (score+10) (nbVies-1) in
+      Flux.append etatJeuFlux (run etatJeuBalleSuivante)
 end
 
-let () = 
+let truc () = 
   let position0 = (200.,300.) in
   let vitesse0 = (20.,100.) in
   let acceleration0 = (0.,-9.81) in
