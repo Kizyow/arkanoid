@@ -30,7 +30,7 @@ let distance_y = 36.25
 let num_cols = 16
 let num_rows = 4
 
-let briques = generate_bricks start_x start_y distance_x distance_y num_cols num_rows
+let briques = creer_briques start_x start_y distance_x distance_y num_cols num_rows
 
 let contains (x, y, w, h) (px, py) =
   x <= px && px < x +. w &&
@@ -42,47 +42,43 @@ let intersects (x1, y1, w1, h1) (x2, y2, w2, h2) =
        y1 > y2 +. h2 ||
        y1 +. h1 < y2)
 
-let quadtree_vide w h = Vide (0., 0., w, h)
+let quadtree_vide (x, y, w, h) = Vide (x, y, w, h)
 
-let divide_quadtree (Vide (x, y, w, h)) =
+let divide_aabb (x, y, w, h) =
   let half_w = w /. 2.0 in
   let half_h = h /. 2.0 in
-  Noeud ((x, y, w, h),
-         Vide (x, y, half_w, half_h),       (* NO *)
-         Vide (x +. half_w, y, half_w, half_h), (* NE *)
-         Vide (x, y +. half_h, half_w, half_h), (* SO *)
-         Vide (x +. half_w, y +. half_h, half_w, half_h)) (* SE *)
+  [ (x, y, half_w, half_h);             (* NO *)
+    (x +. half_w, y, half_w, half_h);   (* NE *)
+    (x, y +. half_h, half_w, half_h);   (* SO *)
+    (x +. half_w, y +. half_h, half_w, half_h)] (* SE *)
 
 let rec insert quadtree point =
   match quadtree with
-  | Vide (x, y, w, h) -> Feuille ((x, y, w, h), point)
-  | Feuille (aabb, _) ->
-    let node = divide_quadtree (Vide aabb) in
-    insert node point
-  | Noeud (aabb, no, ne, so, se) ->
-    let insert_in_quadrant quadrant qt =
-      match quadrant with
-      | NO -> insert qt point
-      | NE -> insert qt point
-      | SO -> insert qt point
-      | SE -> insert qt point
-    in
-    let no = if contains no.aabb point then insert_in_quadrant NO no else no in
-    let ne = if contains ne.aabb point then insert_in_quadrant NE ne else ne in
-    let so = if contains so.aabb point then insert_in_quadrant SO so else so in
-    let se = if contains se.aabb point then insert_in_quadrant SE se else se in
-    Noeud (aabb, no, ne, so, se)
-
-let rec query quadtree range found =
-  match quadtree with
-  | Vide _ -> found
-  | Feuille (_, point) -> if contains range point then point :: found else found
-  | Noeud (_, no, ne, so, se) ->
-    let found = if intersects no.aabb range then query no range found else found in
-    let found = if intersects ne.aabb range then query ne range found else found in
-    let found = if intersects so.aabb range then query so range found else found in
-    let found = if intersects se.aabb range then query se range found else found in
-    found
+  | Vide (x, y, w, h) -> 
+      Feuille ((x, y, w, h), point)  (* Si la case est vide, créer une feuille avec ce point *)
+  
+  | Feuille (aabb, p) -> 
+      (* Si la feuille contient déjà un point, diviser l'aabb en 4 et réinsérer les points *)
+      let [no_aabb; ne_aabb; so_aabb; se_aabb] = divide_aabb aabb in
+      let (x, y, w, h) = aabb in
+      (* Réinsérer le point existant et le nouveau point dans leurs sous-quadrants respectifs *)
+      let no = if contains no_aabb point then Feuille (no_aabb, point) else Vide no_aabb in
+      let ne = if contains ne_aabb point then Feuille (ne_aabb, point) else Vide ne_aabb in
+      let so = if contains so_aabb point then Feuille (so_aabb, point) else Vide so_aabb in
+      let se = if contains se_aabb point then Feuille (se_aabb, point) else Vide se_aabb in
+      Noeud (aabb, no, ne, so, se)
+  
+  | Noeud (aabb, no, ne, so, se) -> 
+      (* Si c'est déjà un noeud, déterminer dans quel quadrant insérer le point *)
+      let [no_aabb; ne_aabb; so_aabb; se_aabb] = divide_aabb aabb in
+      let insert_in_quadrant qt quadrant_aabb =
+        if contains quadrant_aabb point then insert qt point else qt
+      in
+      let no = insert_in_quadrant no no_aabb in
+      let ne = insert_in_quadrant ne ne_aabb in
+      let so = insert_in_quadrant so so_aabb in
+      let se = insert_in_quadrant se se_aabb in
+      Noeud (aabb, no, ne, so, se)
 
 let rec remove quadtree point =
   match quadtree with
@@ -95,3 +91,6 @@ let rec remove quadtree point =
     let so = remove so point in
     let se = remove se point in
     Noeud (aabb, no, ne, so, se)
+
+let initialiser aabb briques =
+  List.fold_left insert (quadtree_vide aabb) briques

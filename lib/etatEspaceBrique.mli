@@ -12,6 +12,9 @@ type quadrant =
   | SO
   | SE
 
+val initialiser : aabb -> t
+
+
 (* Fonctions utilitaires *)
 val contains : aabb -> point -> bool
 val intersects : aabb -> aabb -> bool
