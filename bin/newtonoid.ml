@@ -45,6 +45,7 @@ let draw flux_etat =
       Graphics.clear_graph ();
       (* DESSIN ETAT *)
       draw_state etat;
+      (* Ajouter le texte pour dire le nombre de vie et le score en cours...*)
       (* FIN DESSIN ETAT *)
       Graphics.synchronize ();
       Unix.sleepf Init.dt;
@@ -192,16 +193,16 @@ struct
     else
       let score = EtatJeu.score etatJeu in
       let balleInit = EtatJeu.balle etatJeu in
-      let etatBalleFlux = Bouncing.run (EtatJeu.balle etatJeu) in
+      let etatBalleFlux = Bouncing.run balleInit in
       let etatJeuFlux = Flux.map (fun etatBalle ->
-          EtatJeu.initialiser etatBalle (EtatJeu.score etatJeu) nbVies
+          EtatJeu.initialiser etatBalle score nbVies
         ) etatBalleFlux in
       let etatJeuBalleSuivante = EtatJeu.initialiser balleInit (score+10) (nbVies-1) in
       Flux.append etatJeuFlux (run etatJeuBalleSuivante)
 end
 
 let () = 
-  let position0 = (200.,210.) in
+  let position0 = (20.,10.) in
   let vitesse0 = (600.,300.) in
   let acceleration0 = (0.,-90.81) in
   let etatBalle = EtatBalle.initialiser position0 vitesse0 acceleration0 in
