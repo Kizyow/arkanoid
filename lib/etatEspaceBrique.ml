@@ -92,5 +92,5 @@ let rec remove quadtree point =
     let se = remove se point in
     Noeud (aabb, no, ne, so, se)
 
-let initialiser aabb briques =
+let initialiser aabb =
   List.fold_left insert (quadtree_vide aabb) briques

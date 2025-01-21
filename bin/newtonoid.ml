@@ -2,6 +2,7 @@
 open Libnewtonoid
 open Iterator
 open EtatJeu
+open EtatRaquette
 open EtatBalle
 
 (* exemple d'ouvertue d'un tel module de la bibliotheque : *)
@@ -11,6 +12,7 @@ open Input
 
 type etatBalle = EtatBalle.t
 type etatJeu = EtatJeu.t
+type etatRaquette = EtatRaquette.t
 
 module Init = struct
   let dt = (1000. /. 60.)/. 600. (* 60 Hz *)
@@ -24,6 +26,15 @@ module Box = struct
   let supy = 590.
 end
 
+module FormeRaquette = struct
+  let hauteur = 5.
+  let longeur = 40.
+end
+
+module FormeBalle = struct
+  let rayon = 5.
+end
+
 let graphic_format =
   Format.sprintf
     " %dx%d+50+50"
@@ -32,7 +43,7 @@ let graphic_format =
 
 let draw_state (etat: etatJeu) =
   let (x,y) = EtatJeu.position_balle etat in
-  Graphics.draw_circle (int_of_float x) (int_of_float y) 5
+  Graphics.draw_circle (int_of_float x) (int_of_float y) FormeBalle.rayon
 
 (* extrait le score courant d'un etat : *)
 let score etat : int = EtatJeu.score etat
@@ -183,28 +194,51 @@ struct
     )  
 end
 
+
 module Jeu =
 struct 
 (* Mettre en place une continuation pour chaque déplacement de souris
     et chaque touche de bloc pour incrémenter score et exploser bloc ?*)
+
+  let getEtatRaquette x_raquette_precedent : etatRaquette =
+    let x,_ = (Graphics.mouse_pos ()) in
+    let x_souris = float_of_int x in
+    let demi_raquette = (FormeRaquette.longeur /. 2.0) in
+    let x_raquette = if x_souris +. demi_raquette < Box.infx then Box.infx +. demi_raquette
+    else if x_souris +. demi_raquette > Box.supx then Box.supx -. demi_raquette
+    else x_souris in
+    EtatRaquette.initialiser x_raquette ((x_raquette -. x_raquette_precedent) /. Init.dt)
+
+  let rec flux_etat_raquette (etatRaquette:etatRaquette) =
+    let etat = getEtatRaquette (EtatRaquette.position etatRaquette) in
+    Flux.cons etat (flux_etat_raquette etat)
+  
   let rec run (etatJeu:etatJeu) : etatJeu flux = 
     let nbVies = EtatJeu.vies etatJeu in
     if nbVies<1 then Flux.vide
     else
       let score = EtatJeu.score etatJeu in
       let balleInit = EtatJeu.balle etatJeu in
+      let etatRaquetteInit = EtatJeu.raquette etatJeu in
+      let etatRaquetteFlux = flux_etat_raquette etatRaquetteInit in
       let etatBalleFlux = Bouncing.run balleInit in
       let etatJeuFlux = Flux.map (fun etatBalle ->
           EtatJeu.initialiser etatBalle score nbVies
         ) etatBalleFlux in
-      let etatJeuBalleSuivante = EtatJeu.initialiser balleInit (score+10) (nbVies-1) in
+      (* Il faut initaliser la brique ici et récupérer de état jeu aussi et faire les flux blabla*)
+      let etatJeuBalleSuivante = EtatJeu.initialiser balleInit etatBriqueInit etatRaquetteInit (score+10) (nbVies-1) in
       Flux.append etatJeuFlux (run etatJeuBalleSuivante)
 end
 
+
 let () = 
-  let position0 = (20.,10.) in
+  let x,_ = (Graphics.mouse_pos ()) in
+  let x_souris = float_of_int x in
+  let etatRaquette = Jeu.getEtatRaquette x_souris in
+  let positionBalle0 = (EtatRaquette.position etatRaquette,FormeRaquette.hauteur +. FormeBalle.rayon) in
   let vitesse0 = (600.,300.) in
   let acceleration0 = (0.,-90.81) in
-  let etatBalle = EtatBalle.initialiser position0 vitesse0 acceleration0 in
-  let etatJeu = (EtatJeu.initialiser etatBalle 0 5) in
+  let etatBalle = EtatBalle.initialiser positionBalle0 vitesse0 acceleration0 in
+  let etatBrique = EtatEspaceBrique.initialiser (Box.infx,Box.infy, Box.supx, Box.supy) in 
+  let etatJeu = (EtatJeu.initialiser etatBalle etatBrique etatRaquette 0 5) in
   draw (Jeu.run etatJeu)
