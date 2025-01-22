@@ -7,7 +7,7 @@ type score = int
 and vies = int
 
 type t = EtatBalle.t * EtatEspaceBrique.t * EtatRaquette.t * score * vies
-let initialiser balle briques raquette s v = (balle, briques, raquette, s, v)
+let initialiser (ba:EtatBalle.t) (br:EtatEspaceBrique.t) (ra:EtatRaquette.t) s v : t = (ba, br, ra, s, v)
 let balle ((bl, _, _, _, _) : t) = bl
 let briques ((_, br, _, _, _) : t) = br
 let raquette ((_, _, r, _, _) : t) = r
