@@ -7,7 +7,7 @@ val initialiser : rect -> t
 
 val ajouter_briques : t -> point list -> t
 val retirer_brique : t -> point -> t
-val est_dans_brique: t -> point -> bool
+val est_dans_brique: t -> rect -> point list -> point list
 
 val liste_briques : t -> rect list
 val rectangle : t -> rect

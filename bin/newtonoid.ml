@@ -278,5 +278,5 @@ let () =
   let acceleration0 = (0.,-90.81) in
   let etatBalle = EtatBalle.initialiser positionBalle0 vitesse0 acceleration0 in
   let etatBrique = EtatEspaceBrique.initialiser (Box.infx,Box.infy, Box.supx, Box.supy) in 
-  let etatJeu = (EtatJeu.initialiser etatBalle etatBrique etatRaquette 0 5) in
+  let etatJeu = (EtatJeu.initialiser etatBalle etatBrique etatRaquette 0 500) in
   draw (Jeu.run etatJeu)
