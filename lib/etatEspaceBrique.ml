@@ -36,11 +36,12 @@ let contains (x, y, w, h) (px, py) =
   x <= px && px < x +. w &&
   y <= py && py < y +. h
 
-let intersects (x1, y1, w1, h1) (x2, y2, w2, h2) =
-  not (x1 > x2 +. w2 ||
-       x1 +. w1 < x2 ||
-       y1 > y2 +. h2 ||
-       y1 +. h1 < y2)
+let intersects quadtree (x2, y2, w2, h2) =
+  match quadtree with
+  | Vide(_) -> false
+  | Feuille((x1, y1, w1, h1), _) -> not (x1 > x2 +. w2 || x1 +. w1 < x2 || y1 > y2 +. h2 || y1 +. h1 < y2)
+  | Noeud((x1, y1, w1, h1), _, _, _, _) -> not (x1 > x2 +. w2 || x1 +. w1 < x2 || y1 > y2 +. h2 || y1 +. h1 < y2)
+
 
 let quadtree_vide (x, y, w, h) = Vide (x, y, w, h)
 
@@ -79,6 +80,17 @@ let rec insert quadtree point =
       let so = insert_in_quadrant so so_aabb in
       let se = insert_in_quadrant se se_aabb in
       Noeud (aabb, no, ne, so, se)
+
+let rec query quadtree range found =
+  match quadtree with
+  | Vide _ -> found
+  | Feuille (_, point) -> if contains range point then point :: found else found
+  | Noeud (_, no, ne, so, se) ->
+    let found = if intersects no range then query no range found else found in
+    let found = if intersects ne range then query ne range found else found in
+    let found = if intersects so range then query so range found else found in
+    let found = if intersects se range then query se range found else found in
+    found
 
 let rec remove quadtree point =
   match quadtree with

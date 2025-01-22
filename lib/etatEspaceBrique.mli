@@ -17,10 +17,10 @@ val initialiser : aabb -> t
 
 (* Fonctions utilitaires *)
 val contains : aabb -> point -> bool
-val intersects : aabb -> aabb -> bool
+val intersects : t -> aabb -> bool
 
 (* Fonctions pour le quadtree *)
-val quadtree_vide : float -> float -> t
+val quadtree_vide : aabb -> t
 val insert : t -> point -> t
 val query : t -> aabb -> point list -> point list
 val remove : t -> point -> t
