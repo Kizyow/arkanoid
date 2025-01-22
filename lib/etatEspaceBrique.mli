@@ -1,26 +1,13 @@
-(* Types de données *)
 type point = float * float
-type aabb = float * float * float * float
+type rect = float * float * float * float
 
-(* Type du quadtree *)
 type t
 
-(* Type des quadrants *)
-type quadrant =
-  | NO
-  | NE
-  | SO
-  | SE
+val initialiser : rect -> t
 
-val initialiser : aabb -> t
+val ajouter_briques : t -> point list -> t
+val retirer_brique : t -> point -> t
+val est_dans_brique: t -> point -> bool
 
-
-(* Fonctions utilitaires *)
-val contains : aabb -> point -> bool
-val intersects : t -> aabb -> bool
-
-(* Fonctions pour le quadtree *)
-val quadtree_vide : aabb -> t
-val insert : t -> point -> t
-val query : t -> aabb -> point list -> point list
-val remove : t -> point -> t
+val liste_briques : t -> rect list
+val rectangle : t -> rect

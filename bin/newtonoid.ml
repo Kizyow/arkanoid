@@ -4,6 +4,7 @@ open Iterator
 open EtatJeu
 open EtatRaquette
 open EtatBalle
+open EtatEspaceBrique
 
 (* exemple d'ouvertue d'un tel module de la bibliotheque : *)
 open Game
@@ -13,6 +14,7 @@ open Input
 type etatBalle = EtatBalle.t
 type etatJeu = EtatJeu.t
 type etatRaquette = EtatRaquette.t
+type etatEspaceBrique = EtatEspaceBrique.t
 
 module Init = struct
   let dt = (1000. /. 60.)/. 600. (* 60 Hz *)
@@ -41,9 +43,18 @@ let graphic_format =
     (int_of_float ((2. *. Box.marge) +. Box.supx -. Box.infx))
     (int_of_float ((2. *. Box.marge) +. Box.supy -. Box.infy))
 
+  let dessiner_briques (quadtree:t) =
+    let rec forEach (liste:rect list) =
+      match liste with
+      | [] -> ()
+      | (x, y, w, h)::q -> Graphics.draw_rect (int_of_float x) (int_of_float y) (int_of_float w) (int_of_float h) ; forEach q
+    in forEach (liste_briques quadtree)
+
 let draw_state (etat: etatJeu) =
   let (x,y) = EtatJeu.position_balle etat in
-  Graphics.draw_circle (int_of_float x) (int_of_float y) FormeBalle.rayon
+  Graphics.draw_circle (int_of_float x) (int_of_float y) (int_of_float FormeBalle.rayon);
+  dessiner_briques (EtatJeu.briques etat)
+
 
 (* extrait le score courant d'un etat : *)
 let score etat : int = EtatJeu.score etat
@@ -63,8 +74,7 @@ let draw flux_etat =
       loop flux_etat' (last_score + score etat)
     | _ -> assert false
   in
-  Graphics.open_graph graphic_format;
-  Graphics.auto_synchronize false;
+
   let score = loop flux_etat 0 in
   Format.printf "Score final : %d@\n" score;
   Graphics.close_graph ()
@@ -194,6 +204,30 @@ struct
     )  
 end
 
+module Brique = 
+  struct
+
+  let creer_espace_briques start_x start_y distance_x distance_y num_cols num_rows =
+    let rec aux current_x current_y row col acc =
+      if row = num_rows then acc
+      else if col = num_cols then
+        aux start_x (current_y +. distance_y) (row + 1) 0 acc
+      else
+        let new_x = current_x +. distance_x in
+        aux new_x current_y row (col + 1) ((current_x, current_y) :: acc)
+    in
+    List.rev (aux start_x start_y 0 0 [])
+
+
+  let nb_cols = 16
+  let nb_lignes = 4
+  let width = (Box.supx -. Box.infx) /. float_of_int(nb_cols)
+  let height = ((Box.supy -. Box.infy) /. float_of_int(nb_lignes)) /. 2.0
+  let start_x = Box.marge +. (width /. 2.0)
+  let start_y = Box.marge +. (height /. 2.0)
+
+  let briques_geogebra = creer_espace_briques start_x start_y width height nb_cols nb_lignes
+end
 
 module Jeu =
 struct 
@@ -220,10 +254,11 @@ struct
       let score = EtatJeu.score etatJeu in
       let balleInit = EtatJeu.balle etatJeu in
       let etatRaquetteInit = EtatJeu.raquette etatJeu in
-      let etatRaquetteFlux = flux_etat_raquette etatRaquetteInit in
+      let etatBriqueInit = EtatEspaceBrique.initialiser (Box.infx, Box.infy, Box.supx, Box.supy) in 
+      let etatBriqueInit = EtatEspaceBrique.ajouter_briques etatBriqueInit Brique.briques_geogebra in
       let etatBalleFlux = Bouncing.run balleInit in
       let etatJeuFlux = Flux.map (fun etatBalle ->
-          EtatJeu.initialiser etatBalle score nbVies
+          EtatJeu.initialiser etatBalle etatBriqueInit etatRaquetteInit score nbVies
         ) etatBalleFlux in
       (* Il faut initaliser la brique ici et récupérer de état jeu aussi et faire les flux blabla*)
       let etatJeuBalleSuivante = EtatJeu.initialiser balleInit etatBriqueInit etatRaquetteInit (score+10) (nbVies-1) in
@@ -231,7 +266,10 @@ struct
 end
 
 
+
 let () = 
+  Graphics.open_graph graphic_format;
+  Graphics.auto_synchronize false;
   let x,_ = (Graphics.mouse_pos ()) in
   let x_souris = float_of_int x in
   let etatRaquette = Jeu.getEtatRaquette x_souris in
