@@ -1,7 +1,7 @@
 (* Définition des types pour les composantes de l'état de la raquette *)
 
-type t = float * float
-let initialiser pos vit = (pos, vit)
+type t = float * bool
+let initialiser pos clique = (pos, clique)
 let position ((pos, _) : t) = pos
-let vitesse ((_, vit) : t) = vit
+let clique ((_, cliq) : t) = cliq
 

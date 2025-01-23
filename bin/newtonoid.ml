@@ -17,7 +17,7 @@ type etatRaquette = EtatRaquette.t
 type etatEspaceBrique = EtatEspaceBrique.t
 
 module Init = struct
-  let dt = (1000. /. 60.)/. 600. (* 60 Hz *)
+  let dt = ((1000. /. 60.)/. 1200.) (* 120 Hz *)
 end
 
 module Box = struct
@@ -29,8 +29,8 @@ module Box = struct
 end
 
 module FormeRaquette = struct
-  let hauteur = 5.
-  let longeur = 40.
+  let hauteur = 15.
+  let longeur = 300.
 end
 
 module FormeBalle = struct
@@ -52,7 +52,7 @@ let dessiner_briques (quadtree:etatEspaceBrique) =
 
 let dessiner_raquette etatRaquette =
   let x_centre = EtatRaquette.position etatRaquette in
-   let x, y, w, h = (x_centre -. FormeRaquette.longeur) /. 2.0, 0., FormeRaquette.longeur, FormeRaquette.hauteur in
+   let x, y, w, h = (x_centre -. (FormeRaquette.longeur)/.2.), 0., FormeRaquette.longeur, FormeRaquette.hauteur in
   Graphics.draw_rect (int_of_float x) (int_of_float y) (int_of_float w) (int_of_float h) 
 
 let draw_state (etat: etatJeu) =
@@ -139,37 +139,50 @@ end
                 Some(t,unless q cond f_cond))
         )
 
-
-  let rec unless_2 : 'a Flux.t-> 'b Flux.t-> ('a -> 'b -> bool) -> ('a -> 'b -> 'a Flux.t) -> 'a Flux.t =
-    fun fluxBalle fluxRaquette cond f_cond ->
+  (* Fonction qui filtre et transforme les éléments d'un flux en fonction d'une condition *)
+  (* Si un élément satisfait la condition, il est transformé par une fonction donnée et   *)
+  (*    il est transmis à un nouveau générateur de flux.                                  *)
+  (* Sinon, il est laissé inchangé.                                                       *)
+  (* paramètres:                                                                          *)
+  (* flux : 'a Flux.t                                                                     *)
+  (* cond : 'a -> bool                                                                    *)
+  (* f_cond : 'a -> 'a Flux.t                                                             *)
+  let rec unless_modif : 'a Flux.t-> ('a -> bool) -> ('a -> 'a) -> ('a -> 'a Flux.t) -> 'a Flux.t =
+    fun flux cond elt_modif f_cond ->
       Tick 
         (lazy
-          (match (Flux.uncons fluxBalle) , (Flux.uncons fluxRaquette) with
-          |None,_ |_,None -> None
-          |Some (tb,qb), Some(tr,qr) ->
-              if (cond tb tr) then
-                Flux.uncons (f_cond tb tr)
+          (match (Flux.uncons flux) with
+          |None -> None
+          |Some (t,q) ->
+              if (cond t) then
+                Flux.uncons (f_cond (elt_modif t))
               else
-                Some(tb,unless_2 qb qr cond f_cond)))
+                Some(t,unless_modif q cond elt_modif f_cond))
+        )
 
 (* Mettre en place une continuation pour chaque déplacement de souris
     et chaque touche de bloc pour incrémenter score et exploser bloc ?*)
-
-    let getEtatRaquette x_raquette_precedent : etatRaquette =
-      let x,_ = (Graphics.mouse_pos ()) in
-      let x_souris = float_of_int x in
-      let demi_raquette = (FormeRaquette.longeur /. 2.0) in
-      let x_raquette = if x_souris +. demi_raquette < Box.infx then Box.infx +. demi_raquette
-      else if x_souris +. demi_raquette > Box.supx then Box.supx -. demi_raquette
-      else x_souris in
-      EtatRaquette.initialiser x_raquette ((x_raquette -. x_raquette_precedent) /. Init.dt)
   
-    let flux_etat_raquette (etatRaquette:etatRaquette) =
-      let etatInit = getEtatRaquette (EtatRaquette.position etatRaquette) in
-      Flux.unfold (fun etat -> Some(etat, (getEtatRaquette (EtatRaquette.position etat)))) etatInit
+    (* Fonction qui génère un flux d'état de raquette. Une fois exécutée, elle récupère le flux d'état 
+      de la souris (à l'aide de la bibliothèque Graphics) et le transforme en flux d'état de raquette.*)
+    let flux_etat_raquette () =
+      let flux_souris = Flux.unfold
+      (fun () ->
+        let x, _ = Graphics.mouse_pos () in
+        Some ((float_of_int x, Graphics.button_down ()), ()))
+      () in 
+      let demi_raquette = (FormeRaquette.longeur /. 2.) in
+      let f = fun (x_souris , b_clique) ->
+        if x_souris -. demi_raquette < Box.infx then
+          (EtatRaquette.initialiser (Box.infx +. demi_raquette) b_clique)
+      else if x_souris +. demi_raquette > Box.supx then
+        (EtatRaquette.initialiser (Box.supx -. demi_raquette) b_clique)
+      else
+        (EtatRaquette.initialiser x_souris b_clique)
+      in Flux.map f flux_souris
 
-(* Module représentant une balle qui se déplace dans l'espace et rebondit sur les bords du cadre de jeu. *)
-module Bouncing =
+(* Module proposant des fonctions utilitaire pour gérer l'état d'une balle dans un cadre de jeu. *)
+module GestionBalle =
 struct
 
   (* Fonction qui détecte un contact en une dimension. *)
@@ -192,14 +205,17 @@ struct
     let xr = EtatRaquette.position etatRaquette in
     let (dx,dy) = EtatBalle.vitesse etatBalle in
     let demi_raquette = (FormeRaquette.longeur/. 2.) in
-    (xb<=(xr +. demi_raquette)) && (xb>=(xr -. demi_raquette)) && (yb <= FormeRaquette.hauteur +. (FormeRaquette.hauteur/.2.+.FormeBalle.rayon)) && (dy<0.)
+    (xb<=(xr +. demi_raquette)) && (xb>=(xr -. demi_raquette))
+      && (yb <= FormeRaquette.hauteur +. FormeBalle.rayon +. 2.) && (dy<0.)
 
   (* Fonction qui détecte un contact en deux dimensions. *)
   (* Si la balle touche une des bornes du cadre de jeu, elle retourne vrai. *)
   (* Sinon, elle retourne faux. *)
   (* paramètres:                *)
   (* ((x, y), (dx, dy), (ddx, ddy)) : (float * float) * (float * float) * (float * float)  - Etat de la balle *)
-  let contact etatBalle etatRaquette = 
+  let contact (etatJeu:etatJeu) = 
+    let etatBalle = EtatJeu.balle etatJeu in
+    let etatRaquette = EtatJeu.raquette etatJeu in
     let (x,y) = EtatBalle.position etatBalle  in
     let (dx,dy) = EtatBalle.vitesse etatBalle  in
     (contact_1d Box.infx Box.supx x dx) || (contact_1d Box.infy Box.supy y dy) || (contact_raquette etatBalle etatRaquette)
@@ -248,75 +264,11 @@ struct
         else somme_dxb_dyb*.coeff_direction
       in
       EtatBalle.initialiser (xb, yb) (new_dxb, somme_dxb_dyb*.(1.-.coeff_direction)) (ddxb+.addAccX, ddyb+.addAccY)
-    
-    
-  (* Fonction récursive qui simule le mouvement de la balle. *)
-  (* Si la balle touche une des bornes, elle rebondit. *)
-  (* Si la balle touche une des bornes, elle rebondit. *)
-  (* Si la balle touche le bas du cadre, le jeu s'arrête. *)
-  (* Sinon, elle continue son mouvement. *)
-  (* paramètres:                                                                          *)
-  (* etatBalle0 : (float * float) * (float * float)  * (float * float)                         *)
-  (*let rec run (etatJeu: etatJeu) : etatJeu Flux.t =
-    let etatRaquetteFlux = flux_etat_raquette (EtatJeu.raquette etatJeu) in
-    let etatBrique = EtatJeu.briques etatJeu in
-    let score = EtatJeu.score etatJeu in
-    let vies = EtatJeu.vies etatJeu in
-    Flux.map2 
-    (fun etatBalle etatRaquette -> EtatJeu.initialiser etatBalle etatBrique etatRaquette score vies)
-    (unless_2 (FreeFall.run (EtatJeu.balle etatJeu)) etatRaquetteFlux contact (fun etatBalle etatRaquette ->
-      if contact_sol etatBalle then
-        Flux.vide
-        (* Si on touche le sol, on perd une vie et on relance une balle
-        let acc0 = (0., -9.81) in
-        let position0 = (200., 300.) in
-        let vitesse0 = (20., -100.) in
-        let etatBalle0 = EtatBalle.initialiser position0 vitesse0 acc0 in
-        (run etatBalle0 (score+10)) *)
-      else if contact_raquette etatBalle (EtatJeu.raquette etatJeu) then
-        let nvEtatBalle = (rebond_raquette etatBalle (EtatJeu.raquette etatJeu) (0.5, 0.5)) in
-        let nvEtatJeu = EtatJeu.initialiser nvEtatBalle (EtatJeu.briques etatJeu) etatRaquette score vies in
-        run nvEtatJeu
-
-      else
-        (* En cas de rebond contre un mur, on augmente l'accélération de 0.05*)
-        let nvEtatBalle = rebond etatBalle (0.5, 0.5) in
-        let nvEtatJeu = EtatJeu.initialiser nvEtatBalle (EtatJeu.briques etatJeu) etatRaquette score vies in
-        run nvEtatJeu
-    ))
-    etatRaquetteFlux*)
-    let rec run (etatJeu: etatJeu) : etatJeu Flux.t =
-      let etatRaquetteFlux = flux_etat_raquette (EtatJeu.raquette etatJeu) in
-      let etatBrique = EtatJeu.briques etatJeu in
-      let score = EtatJeu.score etatJeu in
-      let vies = EtatJeu.vies etatJeu in
-    
-      Flux.map2
-        (fun etatBalle etatRaquette ->
-          if contact_sol etatBalle then
-            (* Si on touche le sol, on perd une vie et on relance une balle *)
-            let acc0 = (0., -9.81) in
-            let position0 = (200., 300.) in
-            let vitesse0 = (20., -100.) in
-            let etatBalle0 = EtatBalle.initialiser position0 vitesse0 acc0 in
-            let nvVies = vies - 1 in
-            EtatJeu.initialiser etatBalle0 etatBrique etatRaquette score nvVies
-          else if contact_raquette etatBalle etatRaquette then
-            let nvEtatBalle = rebond_raquette etatBalle etatRaquette (0.5, 0.5) in
-            EtatJeu.initialiser nvEtatBalle etatBrique etatRaquette score vies
-          else
-            (* En cas de rebond contre un mur, on augmente l'accélération de 0.05*)
-            let nvEtatBalle = rebond etatBalle (0.5, 0.5) in
-            EtatJeu.initialiser nvEtatBalle etatBrique etatRaquette score vies
-        )
-        (FreeFall.run (EtatJeu.balle etatJeu))
-        etatRaquetteFlux
-
 end
 
+(* Module proposant des fonctions utilitaire pour gérer l'état des briques dans un cadre de jeu. *)
 module Brique = 
   struct
-
   let creer_espace_briques start_x start_y distance_x distance_y num_cols num_rows =
     let rec aux current_x current_y row col acc =
       if row = num_rows then acc
@@ -338,64 +290,51 @@ module Brique =
 
   let briques_geogebra = creer_espace_briques start_x start_y width height nb_cols nb_lignes
 end
-(*
-module Jeu =
-struct 
-  
-  let rec run (etatJeu:etatJeu) : etatJeu Flux.t = 
-    (* On créer un unless ici pour gérer si il y a colision avec une brique, le fcond c'est retirer la brique, faire rebondir la balle et continuer le jeu *)
-    let nbVies = EtatJeu.vies etatJeu in
-    if nbVies<1 then Flux.vide
-    else
-      let etatJeuFlux = Bouncing.run etatJeu in
-      let score = EtatJeu.score etatJeu in
-      let etatBriqueInit = EtatEspaceBrique.initialiser (Box.infx, Box.infy, Box.supx, Box.supy) in 
-      (*let etatBriqueInit = EtatEspaceBrique.ajouter_briques etatBriqueInit Brique.briques_geogebra in*)
-      let etatRaquetteInit = EtatJeu.raquette etatJeu in
-      let balleInit = EtatJeu.balle etatJeu in
-      (* Il faut initaliser la brique ici et récupérer de état jeu aussi et faire les flux blabla*)
-      let etatJeuBalleSuivante = EtatJeu.initialiser balleInit etatBriqueInit etatRaquetteInit (score+10) (nbVies-1) in
-      let machin = (run etatJeuBalleSuivante) in
-      Flux.append etatJeuFlux machin
-end
-*)
-module Jeu = struct
 
+module Jeu = struct
   let rec run (etatJeu: etatJeu) : etatJeu Flux.t =
     let nbVies = EtatJeu.vies etatJeu in
     if nbVies < 1 then Flux.vide
     else
-      let etatRaquetteFlux = flux_etat_raquette (EtatJeu.raquette etatJeu) in
+      let etatRaquetteFlux = flux_etat_raquette () in
       let etatBrique = EtatJeu.briques etatJeu in
       let score = EtatJeu.score etatJeu in
-
-      Flux.map2
-        (fun etatBalle etatRaquette ->
-          if Bouncing.contact_sol etatBalle then
-            (* Si on touche le sol, on perd une vie et on relance une balle *)
-            let etatBalle0 = EtatJeu.balle etatJeu in
-            let nvVies = nbVies - 1 in
-            EtatJeu.initialiser etatBalle0 etatBrique etatRaquette score nvVies
-          else if Bouncing.contact_raquette etatBalle etatRaquette then
-            let nvEtatBalle = Bouncing.rebond_raquette etatBalle etatRaquette (0.5, 0.5) in
-            EtatJeu.initialiser nvEtatBalle etatBrique etatRaquette score nbVies
-          else
-            (* En cas de rebond contre un mur, on augmente l'accélération de 0.05*)
-            let nvEtatBalle = Bouncing.rebond etatBalle (0.5, 0.5) in
-            EtatJeu.initialiser nvEtatBalle etatBrique etatRaquette score nbVies
-        )
-        (FreeFall.run (EtatJeu.balle etatJeu))
-        etatRaquetteFlux
+      let nbVies = EtatJeu.vies etatJeu in
+      let etatBalle0 = EtatJeu.balle etatJeu in
+      let fluxBalle = (FreeFall.run etatBalle0) in
+      let fluxJeu = Flux.map2 
+      (fun balle raquette ->
+          EtatJeu.initialiser balle etatBrique raquette score nbVies
+      )
+      fluxBalle etatRaquetteFlux in
+      unless_modif fluxJeu GestionBalle.contact 
+      (fun etatJeuEvent ->
+        let etatBalle = EtatJeu.balle etatJeuEvent in
+        let etatRaquette = EtatJeu.raquette etatJeuEvent in
+        if GestionBalle.contact_sol etatBalle then
+          (* Si on touche le sol, on perd une vie et on relance une balle *)
+          let positionBalle0 = (EtatRaquette.position etatRaquette,FormeRaquette.hauteur +. FormeBalle.rayon) in
+          let vitesse0 = (600.,300.) in
+          let acceleration0 = (0.,-90.81) in
+          let etatBalle = EtatBalle.initialiser positionBalle0 vitesse0 acceleration0 in
+          EtatJeu.initialiser etatBalle etatBrique etatRaquette score (nbVies-1)
+        else if GestionBalle.contact_raquette etatBalle etatRaquette then
+          let nvEtatBalle = GestionBalle.rebond_raquette etatBalle etatRaquette (0.5, 0.5) in
+          EtatJeu.initialiser nvEtatBalle etatBrique etatRaquette score nbVies
+        else
+          (* En cas de rebond contre un mur, on augmente l'accélération de 0.05*)
+          let nvEtatBalle = GestionBalle.rebond etatBalle (0.5, 0.5) in
+          EtatJeu.initialiser nvEtatBalle etatBrique etatRaquette score nbVies
+      )
+      (fun etatJeuNext -> run etatJeuNext)
 end
-
-
 
 let () = 
   Graphics.open_graph graphic_format;
   Graphics.auto_synchronize true;
   let x,_ = (Graphics.mouse_pos ()) in
   let x_souris = float_of_int x in
-  let etatRaquette = getEtatRaquette x_souris in
+  let etatRaquette = EtatRaquette.initialiser x_souris false in
   let positionBalle0 = (EtatRaquette.position etatRaquette,FormeRaquette.hauteur +. FormeBalle.rayon) in
   let vitesse0 = (600.,300.) in
   let acceleration0 = (0.,-90.81) in
