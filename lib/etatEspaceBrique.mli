@@ -1,13 +1,12 @@
 type point = float * float
 type rect = float * float * float * float
+type brique = point * float * float * string
 
 type t
 
-val initialiser : rect -> t
+val initialiser : t
 
-val ajouter_briques : t -> point list -> t
-val retirer_brique : t -> point -> t
-val est_dans_brique: t -> rect -> point list -> point list
-
-val liste_briques : t -> rect list
-val rectangle : t -> rect
+val ajouter_brique : t -> brique -> rect -> t
+val retirer_brique : t -> brique -> t
+val query: t -> rect -> brique list
+val collision_avec_brique: t -> rect -> bool

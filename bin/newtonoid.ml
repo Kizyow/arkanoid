@@ -45,12 +45,29 @@ let graphic_format =
     (int_of_float ((2. *. Box.marge) +. Box.supx -. Box.infx))
     (int_of_float ((2. *. Box.marge) +. Box.supy -. Box.infy))
 
-let dessiner_briques (quadtree:etatEspaceBrique) =
-  let rec forEach (liste:rect list) =
-    match liste with
-    | [] -> ()
-    | (x, y, w, h)::q -> Graphics.draw_rect (int_of_float x) (int_of_float y) (int_of_float w) (int_of_float h) ; forEach q
-  in forEach (liste_briques quadtree)
+let dessiner_brique (((x, y), w, h, color) : brique) =
+  let x_int = int_of_float x in
+  let y_int = int_of_float y in
+  let w_int = int_of_float w in
+  let h_int = int_of_float h in
+
+  (match color with
+   | "red" -> Graphics.set_color Graphics.red
+   | "green" -> Graphics.set_color Graphics.green
+   | "blue" -> Graphics.set_color Graphics.blue
+   | _ -> Graphics.set_color (Graphics.rgb 128 128 128)); 
+
+  (* la brique *)
+  Graphics.fill_rect x_int y_int w_int h_int;
+
+  (* bordure de la brique *)
+  Graphics.set_color Graphics.black;
+  Graphics.draw_rect x_int y_int w_int h_int
+
+let dessiner_espace_brique (quadtree : etatEspaceBrique) =
+  let taille_jeu = (Box.infx, Box.infy, Box.supx, Box.supy) in
+  let briques = query quadtree taille_jeu in
+  List.iter dessiner_brique briques
 
 let dessiner_raquette etatRaquette =
   let x_centre = EtatRaquette.position etatRaquette in
@@ -60,7 +77,7 @@ let dessiner_raquette etatRaquette =
 let draw_state (etat: etatJeu) =
   let (x,y) = EtatJeu.position_balle etat in
   Graphics.draw_circle (int_of_float x) (int_of_float y) (int_of_float ParametresBalle.rayon);
-  (*dessiner_briques (EtatJeu.briques etat)*)
+  dessiner_espace_brique (EtatJeu.briques etat);
   dessiner_raquette (EtatJeu.raquette etat)
 
 
@@ -219,9 +236,11 @@ struct
   let contact (etatJeu:etatJeu) = 
     let etatBalle = EtatJeu.balle etatJeu in
     let etatRaquette = EtatJeu.raquette etatJeu in
+    let espaceBrique = EtatJeu.briques etatJeu in
     let (x,y) = EtatBalle.position etatBalle  in
     let (dx,dy) = EtatBalle.vitesse etatBalle  in
-    (contact_1d Box.infx Box.supx x dx) || (contact_1d Box.infy Box.supy y dy) || (contact_raquette etatBalle etatRaquette)
+    let collisionBrique = collision_avec_brique espaceBrique (x, y, ParametresBalle.rayon, ParametresBalle.rayon) in
+    collisionBrique || (contact_1d Box.infx Box.supx x dx) || (contact_1d Box.infy Box.supy y dy) || (contact_raquette etatBalle etatRaquette)
 
   (* Fonction qui vérifie si la balle touche le sol (bas du cadre). *)
   (* Si la balle touche le bas du cadre, elle retourne vrai. *)
@@ -292,6 +311,25 @@ module Brique =
   let start_y = Box.marge +. (height /. 2.0)
 
   let briques_geogebra = creer_espace_briques start_x start_y width height nb_cols nb_lignes
+
+  let create_bricks (bounds : rect) =
+    let (x, y, w, h) = bounds in
+    let brick_width = w /. 13.0 in
+    let brick_height = h /. 13.0 in
+  
+    let create_row row =
+      List.init 13 (fun col ->
+        let brick_x = x +. (float_of_int col) *. brick_width in
+        let brick_y = y +. h -. (float_of_int (row + 1)) *. brick_height in
+        let color = match row with
+          | 0 -> "red"
+          | 1 -> "green"
+          | 2 -> "blue"
+          | _ -> "gray"
+        in
+        ((brick_x, brick_y), brick_width, brick_height, color)
+      )
+      in List.concat (List.init 3 create_row)
 end
 
 module Jeu = struct
@@ -324,6 +362,7 @@ module Jeu = struct
       (fun etatJeuEvent ->
         let etatBalle = EtatJeu.balle etatJeuEvent in
         let etatRaquette = EtatJeu.raquette etatJeuEvent in
+        let (x, y) = EtatBalle.position etatBalle in
         if GestionBalle.contact_sol etatBalle then
           (* Si on touche le sol, on perd une vie et on relance une balle *)
           let positionBalle0 = (EtatRaquette.position etatRaquette,FormeRaquette.hauteur +. ParametresBalle.rayon) in
@@ -335,9 +374,20 @@ module Jeu = struct
           (* Si on touche la raquette, on rebondie dans une direction défini par rebond_raquette *)
           let nvEtatBalle = GestionBalle.rebond_raquette etatBalle etatRaquette (0.5, 0.5) in
           (EtatJeu.initialiser nvEtatBalle etatBrique etatRaquette score nbVies) , false
+        else if collision_avec_brique etatBrique (x, y, ParametresBalle.rayon, ParametresBalle.rayon) then
+          let briques = query etatBrique (x, y, ParametresBalle.rayon, ParametresBalle.rayon) in
+          let nvBriques = match briques with 
+          | b::_ -> retirer_brique etatBrique b
+          | _ -> etatBrique in 
+          print_endline "brique";
+          
+          (* REBOND DE LA BALLE QUI MARCHE PAS, A FAIRE !!!!!!!!!!! *)
+          let nvEtatBalle = GestionBalle.rebond etatBalle (0.5, 0.5) in
+            (EtatJeu.initialiser nvEtatBalle nvBriques etatRaquette (score+100) nbVies) , false
         else
           (* En cas de rebond contre un mur, on augmente l'accélération de 0.05*)
           let nvEtatBalle = GestionBalle.rebond etatBalle (0.5, 0.5) in
+          print_endline "mur";
           (EtatJeu.initialiser nvEtatBalle etatBrique etatRaquette score nbVies) , false
       )
       (fun etatJeuNext balleCollee -> run etatJeuNext balleCollee))
@@ -345,12 +395,14 @@ end
 
 let () = 
   Graphics.open_graph graphic_format;
-  Graphics.auto_synchronize true;
+  Graphics.auto_synchronize false;
   let x,_ = (Graphics.mouse_pos ()) in
   let x_souris = float_of_int x in
   let etatRaquette = EtatRaquette.initialiser x_souris false in
   let positionBalle0 = (EtatRaquette.position etatRaquette,FormeRaquette.hauteur +. ParametresBalle.rayon) in
   let etatBalle = EtatBalle.initialiser positionBalle0 ParametresBalle.vitesse_initiale ParametresBalle.acceleration_initiale in
-  let etatBrique = EtatEspaceBrique.initialiser (Box.infx,Box.infy, Box.supx, Box.supy) in 
+  let taille_jeu = (Box.infx, Box.infy, Box.supx, Box.supy) in
+  let etatBrique = EtatEspaceBrique.initialiser in 
+  let etatBrique = (List.fold_left (fun acc b -> ajouter_brique acc b taille_jeu) etatBrique (Brique.create_bricks taille_jeu)) in
   let etatJeu = (EtatJeu.initialiser etatBalle etatBrique etatRaquette 0 500) in
   draw (Jeu.run etatJeu true)
