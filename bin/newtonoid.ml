@@ -274,7 +274,7 @@ struct
     let (ddx,ddy) = EtatBalle.acceleration etatBalle in
     EtatBalle.initialiser 
       (x, y)
-      (if contact_1d xbr (xbr+wbr) x dx then dx ,-.dy else -.dx, dy)
+      (if contact_1d xbr (xbr+.wbr) x dx then -.dx ,dy else dx, -.dy)
       (ddx+.addAccX, ddy+.addAccY)
 
   (*Signature TODO*)
@@ -386,7 +386,7 @@ module Jeu = struct
         else if collision_avec_brique etatBrique (x, y, ParametresBalle.rayon, ParametresBalle.rayon) then
           let briques = query etatBrique (x, y, ParametresBalle.rayon, ParametresBalle.rayon) in
           let brique_retiree = List.hd briques in
-          let ((xb, yb), w, h, _) = brique_retiree in
+          let ((xb, yb), wb, hb, _) = brique_retiree in
           let nvBriques = retirer_brique etatBrique brique_retiree in
           (* REBOND DE LA BALLE QUI MARCHE PAS, A FAIRE !!!!!!!!!!! *)
           let nvEtatBalle = GestionBalle.rebond_brique etatBalle (xb, yb, wb, hb) (0.5, 0.5) in
