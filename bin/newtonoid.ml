@@ -268,14 +268,13 @@ struct
       (if contact_1d Box.infy Box.supy y dy then -.dy else dy))
       (ddx+.addAccX, ddy+.addAccY)
 
-let rebond_brique etatBalle (xb, yb, wb, hb) (addAccX, addAccY) : etatBalle = 
+  let rebond_brique etatBalle (xbr, ybr, wbr, hbr) (addAccX, addAccY) : etatBalle = 
     let (x,y) = EtatBalle.position etatBalle in
     let (dx,dy) = EtatBalle.vitesse etatBalle in
     let (ddx,ddy) = EtatBalle.acceleration etatBalle in
     EtatBalle.initialiser 
       (x, y)
-      ((if contact_1d x (xb+wb) x dx then -.dx else dx),
-      (if contact_1d yb (yb+hb) y dy then -.dy else dy))
+      (if contact_1d xbr (xbr+wbr) x dx then dx ,-.dy else -.dx, dy)
       (ddx+.addAccX, ddy+.addAccY)
 
   (*Signature TODO*)
