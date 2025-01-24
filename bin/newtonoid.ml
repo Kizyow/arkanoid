@@ -78,7 +78,11 @@ let draw_state (etat: etatJeu) =
   let (x,y) = EtatJeu.position_balle etat in
   Graphics.draw_circle (int_of_float x) (int_of_float y) (int_of_float ParametresBalle.rayon);
   dessiner_espace_brique (EtatJeu.briques etat);
-  dessiner_raquette (EtatJeu.raquette etat)
+  dessiner_raquette (EtatJeu.raquette etat);
+  Graphics.moveto 10 10 ;
+  Graphics.draw_string ("Score : "^(string_of_int (EtatJeu.score etat))) ;
+  Graphics.moveto 10 20 ;
+  Graphics.draw_string ("Vies : "^(string_of_int (EtatJeu.vies etat)))
 
 
 (* extrait le score courant d'un etat : *)
