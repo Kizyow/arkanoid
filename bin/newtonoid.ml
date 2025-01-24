@@ -268,6 +268,16 @@ struct
       (if contact_1d Box.infy Box.supy y dy then -.dy else dy))
       (ddx+.addAccX, ddy+.addAccY)
 
+let rebond_brique etatBalle (xb, yb, wb, hb) (addAccX, addAccY) : etatBalle = 
+    let (x,y) = EtatBalle.position etatBalle in
+    let (dx,dy) = EtatBalle.vitesse etatBalle in
+    let (ddx,ddy) = EtatBalle.acceleration etatBalle in
+    EtatBalle.initialiser 
+      (x, y)
+      ((if contact_1d x (xb+wb) x dx then -.dx else dx),
+      (if contact_1d yb (yb+hb) y dy then -.dy else dy))
+      (ddx+.addAccX, ddy+.addAccY)
+
   (*Signature TODO*)
   let rebond_raquette etatBalle etatRaquette (addAccX, addAccY): etatBalle = 
       let (xb,yb) = EtatBalle.position etatBalle in
@@ -376,13 +386,11 @@ module Jeu = struct
           (EtatJeu.initialiser nvEtatBalle etatBrique etatRaquette score nbVies) , false
         else if collision_avec_brique etatBrique (x, y, ParametresBalle.rayon, ParametresBalle.rayon) then
           let briques = query etatBrique (x, y, ParametresBalle.rayon, ParametresBalle.rayon) in
-          let nvBriques = match briques with 
-          | b::_ -> retirer_brique etatBrique b
-          | _ -> etatBrique in 
-          print_endline "brique";
-          
+          let brique_retiree = List.hd briques in
+          let ((xb, yb), w, h, _) = brique_retiree in
+          let nvBriques = retirer_brique etatBrique brique_retiree in
           (* REBOND DE LA BALLE QUI MARCHE PAS, A FAIRE !!!!!!!!!!! *)
-          let nvEtatBalle = GestionBalle.rebond etatBalle (0.5, 0.5) in
+          let nvEtatBalle = GestionBalle.rebond_brique etatBalle (xb, yb, wb, hb) (0.5, 0.5) in
             (EtatJeu.initialiser nvEtatBalle nvBriques etatRaquette (score+100) nbVies) , false
         else
           (* En cas de rebond contre un mur, on augmente l'accélération de 0.05*)
