@@ -17,7 +17,7 @@ type etatRaquette = EtatRaquette.t
 type etatEspaceBrique = EtatEspaceBrique.t
 
 module Init = struct
-  let dt = ((1000. /. 60.)/. 2400.) (* 120 Hz *)
+  let dt = ((1. /. 60.)) (* 60 Hz *)
 end
 
 module Box = struct
@@ -69,6 +69,20 @@ let dessiner_espace_brique (quadtree : etatEspaceBrique) =
   let briques = query quadtree taille_jeu in
   List.iter dessiner_brique briques
 
+let dessiner_quadtree ((x, y, w, h) : rect) =
+  let x_int = int_of_float x in
+  let y_int = int_of_float y in
+  let w_int = int_of_float w in
+  let h_int = int_of_float h in
+
+  Graphics.set_color Graphics.red;
+  Graphics.draw_rect x_int y_int w_int h_int
+
+let dessiner_espace_quadtree (quadtree : etatEspaceBrique) =
+  let taille_jeu = (Box.infx, Box.infy, Box.supx, Box.supy) in
+  let qt = afficher_quadtree quadtree taille_jeu in
+  List.iter dessiner_quadtree qt
+
 let dessiner_raquette etatRaquette =
   let x_centre = EtatRaquette.position etatRaquette in
    let x, y, w, h = (x_centre -. (FormeRaquette.longeur)/.2.), 0., FormeRaquette.longeur, FormeRaquette.hauteur in
@@ -78,6 +92,8 @@ let draw_state (etat: etatJeu) =
   let (x,y) = EtatJeu.position_balle etat in
   Graphics.draw_circle (int_of_float x) (int_of_float y) (int_of_float ParametresBalle.rayon);
   dessiner_espace_brique (EtatJeu.briques etat);
+  dessiner_espace_quadtree (EtatJeu.briques etat) ;
+  Graphics.set_color Graphics.black ;
   dessiner_raquette (EtatJeu.raquette etat);
   Graphics.moveto 10 10 ;
   Graphics.draw_string ("Score : "^(string_of_int (EtatJeu.score etat))) ;
@@ -313,34 +329,13 @@ end
 (* Module proposant des fonctions utilitaire pour gérer l'état des briques dans un cadre de jeu. *)
 module Brique = 
   struct
-  let creer_espace_briques start_x start_y distance_x distance_y num_cols num_rows =
-    let rec aux current_x current_y row col acc =
-      if row = num_rows then acc
-      else if col = num_cols then
-        aux start_x (current_y +. distance_y) (row + 1) 0 acc
-      else
-        let new_x = current_x +. distance_x in
-        aux new_x current_y row (col + 1) ((current_x, current_y) :: acc)
-    in
-    List.rev (aux start_x start_y 0 0 [])
-
-
-  let nb_cols = 16
-  let nb_lignes = 4
-  let width = (Box.supx -. Box.infx) /. float_of_int(nb_cols)
-  let height = ((Box.supy -. Box.infy) /. float_of_int(nb_lignes)) /. 2.0
-  let start_x = Box.marge +. (width /. 2.0)
-  let start_y = Box.marge +. (height /. 2.0)
-
-  let briques_geogebra = creer_espace_briques start_x start_y width height nb_cols nb_lignes
-
-  let create_bricks (bounds : rect) =
+  let brique_separes_par_deux (bounds : rect) =
     let (x, y, w, h) = bounds in
-    let brick_width = w /. 13.0 in
-    let brick_height = h /. 13.0 in
+    let brick_width = w /. 16.0 in
+    let brick_height = h /. 16.0 in
   
     let create_row row =
-      List.init 13 (fun col ->
+      List.init 8 (fun col ->
         let brick_x = x +. (float_of_int col) *. brick_width *.2.0 in
         let brick_y = y +. h -. (float_of_int (row + 1)) *. brick_height *.2.0 in
         let color = match row with
@@ -351,7 +346,26 @@ module Brique =
         in
         ((brick_x, brick_y), brick_width, brick_height, color)
       )
-      in List.concat (List.init 3 create_row)
+    in List.concat (List.init 4 create_row)
+
+    let briques_completes (bounds : rect) =
+      let (x, y, w, h) = bounds in
+      let brick_width = w /. 16.0 in
+      let brick_height = h /. 16.0 in
+    
+      let create_row row =
+        List.init 16 (fun col ->
+          let brick_x = x +. (float_of_int col) *. brick_width in
+          let brick_y = y +. h -. (float_of_int (row + 1)) *. brick_height in
+          let color = match row with
+            | 0 -> "red"
+            | 1 -> "green"
+            | 2 -> "blue"
+            | _ -> "gray"
+          in
+          ((brick_x, brick_y), brick_width, brick_height, color)
+        )
+      in List.concat (List.init 4 create_row)
 end
 
 module Jeu = struct
@@ -399,16 +413,13 @@ module Jeu = struct
         else if collision_avec_brique etatBrique (x, y, ParametresBalle.rayon) then
           let briques = query etatBrique (x-. ParametresBalle.rayon, y-.ParametresBalle.rayon, ParametresBalle.rayon*.2., ParametresBalle.rayon*.2.) in
           let brique_retiree = List.hd briques in
-          print_endline "briques";
           let ((xb, yb), wb, hb, _) = brique_retiree in
           let nvBriques = retirer_brique etatBrique brique_retiree in
-          (* REBOND DE LA BALLE QUI MARCHE PAS, A FAIRE !!!!!!!!!!! *)
           let nvEtatBalle = GestionBalle.rebond_brique etatBalle brique_retiree (0.5, 0.5) in
             (EtatJeu.initialiser nvEtatBalle nvBriques etatRaquette (score+100) nbVies) , false
         else
           (* En cas de rebond contre un mur, on augmente l'accélération de 0.05*)
           let nvEtatBalle = GestionBalle.rebond etatBalle (0.5, 0.5) in
-          print_endline "mur";
           (EtatJeu.initialiser nvEtatBalle etatBrique etatRaquette score nbVies) , false
       )
       (fun etatJeuNext balleCollee -> run etatJeuNext balleCollee))
@@ -424,6 +435,6 @@ let () =
   let etatBalle = EtatBalle.initialiser positionBalle0 ParametresBalle.vitesse_initiale ParametresBalle.acceleration_initiale in
   let taille_jeu = (Box.infx, Box.infy, Box.supx, Box.supy) in
   let etatBrique = EtatEspaceBrique.initialiser in 
-  let etatBrique = (List.fold_left (fun acc b -> ajouter_brique acc b taille_jeu) etatBrique (Brique.create_bricks taille_jeu)) in
-  let etatJeu = (EtatJeu.initialiser etatBalle etatBrique etatRaquette 0 500) in
+  let etatBrique = (List.fold_left (fun acc b -> ajouter_brique acc b taille_jeu) etatBrique (Brique.briques_completes taille_jeu)) in
+  let etatJeu = (EtatJeu.initialiser etatBalle etatBrique etatRaquette 0 5) in
   draw (Jeu.run etatJeu true)
