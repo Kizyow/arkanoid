@@ -73,12 +73,16 @@ let rec query (quadtree : t) (taille : rect) : brique list =
       if intersects rect taille then query no taille @ query ne taille @ query so taille @ query se taille
       else []
 
-let rec collision_avec_brique (quadtree : t) (taille : rect) : bool =
+let rec collision_avec_brique (quadtree : t) (xb, yb, rayon) : bool =
   match quadtree with
   | Vide -> false (* quadtree vide, donc pas de collision *)
   | Brique brique ->
       let (x, y), w, h, _ = brique in (* coordonnées, longueur et hauteur de la brique *)
-      intersects taille (x, y, w, h)  (* si taille est en collision avec la brique, alors y'a collision *)
+      contains (x -. rayon, y -. rayon, w +. rayon *. 2.0, h +. rayon *. 2.0) (xb, yb)  (* si taille est en collision avec la brique, alors y'a collision *)
   | Noeud (rect, no, ne, so, se) -> (* on cherche la collision si elle existe dans chaque sous-quadtree et on append *)
-      if intersects rect taille then collision_avec_brique no taille || collision_avec_brique ne taille || collision_avec_brique so taille || collision_avec_brique se taille
+      if contains rect (xb, yb) then 
+        collision_avec_brique no (xb, yb, rayon) ||
+        collision_avec_brique ne (xb, yb, rayon) ||
+        collision_avec_brique so (xb, yb, rayon) ||
+        collision_avec_brique se (xb, yb, rayon)
       else false

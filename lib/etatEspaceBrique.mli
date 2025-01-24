@@ -9,4 +9,4 @@ val initialiser : t
 val ajouter_brique : t -> brique -> rect -> t
 val retirer_brique : t -> brique -> t
 val query: t -> rect -> brique list
-val collision_avec_brique: t -> rect -> bool
+val collision_avec_brique: t -> (float * float * float) -> bool

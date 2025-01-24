@@ -17,7 +17,7 @@ type etatRaquette = EtatRaquette.t
 type etatEspaceBrique = EtatEspaceBrique.t
 
 module Init = struct
-  let dt = ((1000. /. 60.)/. 1200.) (* 120 Hz *)
+  let dt = ((1000. /. 60.)/. 2400.) (* 120 Hz *)
 end
 
 module Box = struct
@@ -214,6 +214,17 @@ struct
   (* dx : float - la vitesse de la balle                                                  *)
   let contact_1d inf_x sup_x x dx = (x < inf_x && dx < 0.) || (x > sup_x && dx > 0.)
 
+  (* Fonction qui ............................................................*)
+  (* paramètres:                                                                          *)
+  (* (inf_x, sup_x) : float * float - l'intervalle du cadre                               *)
+  (* x : float - la position de la balle                                                  *)
+  (* dx : float - la vitesse de la balle                                                  *)
+  let getVitesseRebondBrique (((xbr, ybr), w, h, _):brique) ((xb,yb):position) ((dx, dy):vitesse) =
+    if (xbr <= xb && xb <= xbr+.w && ((ybr-.20. <= yb && yb <= ybr+.10.) || (ybr +. h -. 20. <= yb && yb <= ybr+.h+.30.)))
+      then (dx,-.dy)
+  else
+    (-.dx,dy)
+
   (* Fonction qui vérifie si la balle touche la raquette. *)
   (* Si la balle touche la raquette, elle retourne vrai. *)
   (* Sinon, elle retourne faux. *)
@@ -239,7 +250,7 @@ struct
     let espaceBrique = EtatJeu.briques etatJeu in
     let (x,y) = EtatBalle.position etatBalle  in
     let (dx,dy) = EtatBalle.vitesse etatBalle  in
-    let collisionBrique = collision_avec_brique espaceBrique (x, y, ParametresBalle.rayon, ParametresBalle.rayon) in
+    let collisionBrique = collision_avec_brique espaceBrique (x, y, ParametresBalle.rayon) in
     collisionBrique || (contact_1d Box.infx Box.supx x dx) || (contact_1d Box.infy Box.supy y dy) || (contact_raquette etatBalle etatRaquette)
 
   (* Fonction qui vérifie si la balle touche le sol (bas du cadre). *)
@@ -257,7 +268,7 @@ struct
   (* Sinon, sa vitesse reste inchangée. *)
   (* paramètres:                                                                                     *)
   (* ((x, y), (dx, dy), (ddx, ddy)) : (float * float) * (float * float) * (float * float) - Etat de la balle     *)
-  (* (addAccX, addAccY) : (float * float) - Quantité d'ajout à l'accélération     *)
+  (* (addAccX, addAccYgetVitesseRebondBrique) : (float * float) - Quantité d'ajout à l'accélération     *)
   let rebond etatBalle (addAccX, addAccY): etatBalle = 
     let (x,y) = EtatBalle.position etatBalle in
     let (dx,dy) = EtatBalle.vitesse etatBalle in
@@ -268,14 +279,12 @@ struct
       (if contact_1d Box.infy Box.supy y dy then -.dy else dy))
       (ddx+.addAccX, ddy+.addAccY)
 
-  let rebond_brique etatBalle (xbr, ybr, wbr, hbr) (addAccX, addAccY) : etatBalle = 
-    let (x,y) = EtatBalle.position etatBalle in
-    let (dx,dy) = EtatBalle.vitesse etatBalle in
+  let rebond_brique etatBalle brique (addAccX, addAccY) : etatBalle = 
     let (ddx,ddy) = EtatBalle.acceleration etatBalle in
     EtatBalle.initialiser 
-      (x, y)
-      (if contact_1d xbr (xbr+.wbr) x dx then -.dx ,dy else dx, -.dy)
-      (ddx+.addAccX, ddy+.addAccY)
+    (EtatBalle.position etatBalle)
+      (getVitesseRebondBrique brique (EtatBalle.position etatBalle) (EtatBalle.vitesse etatBalle))
+      (ddx+.addAccX, ddy+.addAccY) 
 
   (*Signature TODO*)
   let rebond_raquette etatBalle etatRaquette (addAccX, addAccY): etatBalle = 
@@ -328,8 +337,8 @@ module Brique =
   
     let create_row row =
       List.init 13 (fun col ->
-        let brick_x = x +. (float_of_int col) *. brick_width in
-        let brick_y = y +. h -. (float_of_int (row + 1)) *. brick_height in
+        let brick_x = x +. (float_of_int col) *. brick_width *.2.0 in
+        let brick_y = y +. h -. (float_of_int (row + 1)) *. brick_height *.2.0 in
         let color = match row with
           | 0 -> "red"
           | 1 -> "green"
@@ -383,13 +392,14 @@ module Jeu = struct
           (* Si on touche la raquette, on rebondie dans une direction défini par rebond_raquette *)
           let nvEtatBalle = GestionBalle.rebond_raquette etatBalle etatRaquette (0.5, 0.5) in
           (EtatJeu.initialiser nvEtatBalle etatBrique etatRaquette score nbVies) , false
-        else if collision_avec_brique etatBrique (x, y, ParametresBalle.rayon, ParametresBalle.rayon) then
-          let briques = query etatBrique (x, y, ParametresBalle.rayon, ParametresBalle.rayon) in
+        else if collision_avec_brique etatBrique (x, y, ParametresBalle.rayon) then
+          let briques = query etatBrique (x-. ParametresBalle.rayon, y-.ParametresBalle.rayon, ParametresBalle.rayon*.2., ParametresBalle.rayon*.2.) in
           let brique_retiree = List.hd briques in
+          print_endline "briques";
           let ((xb, yb), wb, hb, _) = brique_retiree in
           let nvBriques = retirer_brique etatBrique brique_retiree in
           (* REBOND DE LA BALLE QUI MARCHE PAS, A FAIRE !!!!!!!!!!! *)
-          let nvEtatBalle = GestionBalle.rebond_brique etatBalle (xb, yb, wb, hb) (0.5, 0.5) in
+          let nvEtatBalle = GestionBalle.rebond_brique etatBalle brique_retiree (0.5, 0.5) in
             (EtatJeu.initialiser nvEtatBalle nvBriques etatRaquette (score+100) nbVies) , false
         else
           (* En cas de rebond contre un mur, on augmente l'accélération de 0.05*)
