@@ -18,8 +18,8 @@ type brique = point * float * float * string
    - list brique : Une liste de briques créées avec un espace de deux unités entre elles. *)
 let brique_separes_par_deux (limites : rect) (nbColonnes:int) (nbLignes:int) =
   let (x, y, w, h) = limites in
-  let largeur_brique = w /. 16.0 in
-  let hauteur_brique = h /. 16.0 in
+  let largeur_brique = w /. (float_of_int nbColonnes) in
+  let hauteur_brique = h /. (float_of_int nbColonnes) in
 
   (* Fonction pour créer une rangée de briques *)
   let creer_ligne ligne =
@@ -46,8 +46,8 @@ let brique_separes_par_deux (limites : rect) (nbColonnes:int) (nbLignes:int) =
    - list brique : Une liste de briques créées sans espace entre elles. *)
 let briques_completes (limites : rect) (nbColonnes:int) (nbLignes:int) =
   let (x, y, w, h) = limites in
-  let largeur_brique = w /. 16.0 in
-  let hauteur_brique = h /. 16.0 in
+  let largeur_brique = w /. (float_of_int nbColonnes) in
+  let hauteur_brique = h /. (float_of_int nbColonnes) in
 
   (* Fonction pour créer une rangée de briques *)
   let creer_ligne ligne =
@@ -75,7 +75,7 @@ let briques_completes (limites : rect) (nbColonnes:int) (nbLignes:int) =
    - list brique : Une liste de briques créées avec ou sans espace entre elles. *)
 let creer_briques (limites : rect) (nbColonnes : int) (nbLignes : int) (avec_espace : bool) =
   if avec_espace then
-    brique_separes_par_deux limites nbColonnes nbLignes
+    brique_separes_par_deux limites (nbColonnes*2) nbLignes
   else
     briques_completes limites nbColonnes nbLignes
   

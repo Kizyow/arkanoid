@@ -132,7 +132,7 @@ let rec query (quadtree : etatEspaceBrique) (rectangle : rect) : brique list =
 let rec afficher_quadtree (quadtree : etatEspaceBrique) (taille : rect) : rect list =
   match quadtree with
   | Vide -> [] (* Si le quadtree est vide, retourne une liste vide *)
-  | Brique _ -> [] (* Si le quadtree est une brique, retourne une liste vide *)
+  | Brique _ -> [taille] (* Si le quadtree est une brique, retourne une liste vide *)
   | Noeud (rect, no, ne, so, se) ->
       (* Si le quadtree est un noeud, ajoute le rectangle du noeud et concatène les résultats des sous-quadtrees *)
       rect :: (afficher_quadtree no taille @ afficher_quadtree ne taille @ afficher_quadtree so taille @ afficher_quadtree se taille)
