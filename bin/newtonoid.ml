@@ -63,7 +63,7 @@ let draw_state (etat: etatJeu) =
   let (x,y) = EtatJeu.position_balle etat in
   Graphics.draw_circle (int_of_float x) (int_of_float y) (int_of_float ParametresBalle.rayon);
   dessiner_espace_brique (EtatJeu.briques etat);
-  (* dessiner_espace_quadtree (EtatJeu.briques etat) ; *)
+  if ParametreBrique.voir_bordures_quadtree then dessiner_espace_quadtree (EtatJeu.briques etat) ; 
   Graphics.set_color Graphics.black ;
   dessiner_raquette (EtatJeu.raquette etat);
   Graphics.moveto 10 10 ;
