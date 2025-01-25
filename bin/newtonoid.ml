@@ -89,8 +89,6 @@ let draw flux_etat =
   Format.printf "Score final : %d@\n" score;
   Graphics.close_graph ()
 
-(*let () = game_hello ()*)
-
 (* Fonction qui intègre/somme les valeurs successives du flux *)
 (* avec un pas de temps dt et une valeur initiale nulle, i.e. *)
 (* acc_0 = 0; acc_{i+1} = acc_{i} + dt * flux_{i}             *)
@@ -136,16 +134,22 @@ struct
   (* dx : float - la vitesse de la balle                                                  *)
   let contact_1d inf_x sup_x x dx = (x < inf_x && dx < 0.) || (x > sup_x && dx > 0.)
 
-  (* Fonction qui ............................................................*)
+  (* Fonction qui calcule la nouvelle vitesse de la balle après un rebond sur une brique. *)
   (* paramètres:                                                                          *)
-  (* (inf_x, sup_x) : float * float - l'intervalle du cadre                               *)
-  (* x : float - la position de la balle                                                  *)
-  (* dx : float - la vitesse de la balle                                                  *)
+  (* ((xbr, ybr), w, h, _) : brique - les coordonnées (x, y) de la brique, sa largeur (w), sa hauteur (h) *)
+  (* (xb, yb) : position - la position de la balle                                       *)
+  (* (dx, dy) : vitesse - la vitesse de la balle                                         *)
   let getVitesseRebondBrique (((xbr, ybr), w, h, _):brique) ((xb,yb):position) ((dx, dy):vitesse) =
-    if (xbr <= xb && xb <= xbr+.w && ((ybr-.20. <= yb && yb <= ybr+.10.) || (ybr +. h -. 20. <= yb && yb <= ybr+.h+.30.)))
-      then (dx,-.dy)
-  else
-    (-.dx,dy)
+    if (xbr <= xb && xb <= xbr +. w &&
+        ((ybr -. 20. <= yb && yb <= ybr +. 10.) ||
+        (ybr +. h -. 20. <= yb && yb <= ybr +. h +. 30.)))
+    then
+      (* Si la balle touche une brique horizontalement, on inverse le sens y de la vitesse *)
+      (dx, -. dy)
+    else
+      (* Sinon, on inverse le sens x de la vitesse *)
+      (-. dx, dy)
+
 
   (* Fonction qui vérifie si la balle touche la raquette. *)
   (* Si la balle touche la raquette, elle retourne vrai. *)
@@ -201,31 +205,41 @@ struct
       (if contact_1d Box.infy Box.supy y dy then -.dy else dy))
       (ddx+.addAccX, ddy+.addAccY)
 
-  let rebond_brique etatBalle brique (addAccX, addAccY) : etatBalle = 
-    let (ddx,ddy) = EtatBalle.acceleration etatBalle in
-    EtatBalle.initialiser 
+(* Fonction qui fait rebondir la balle sur une brique. *)
+(* paramètres:                                                                                     *)
+(* etatBalle : etatBalle - Etat de la balle                                                       *)
+(* brique : brique - La brique touchée                                                             *)
+(* (addAccX, addAccY) : (float * float) - Quantité d'ajout à l'accélération                       *)
+let rebond_brique etatBalle brique (addAccX, addAccY) : etatBalle =
+  let (ddx,ddy) = EtatBalle.acceleration etatBalle in
+  EtatBalle.initialiser
     (EtatBalle.position etatBalle)
-      (getVitesseRebondBrique brique (EtatBalle.position etatBalle) (EtatBalle.vitesse etatBalle))
-      (ddx+.addAccX, ddy+.addAccY) 
+    (getVitesseRebondBrique brique (EtatBalle.position etatBalle) (EtatBalle.vitesse etatBalle))
+    (ddx+.addAccX, ddy+.addAccY)
 
-  (*Signature TODO*)
-  let rebond_raquette etatBalle etatRaquette (addAccX, addAccY): etatBalle = 
-      let (xb,yb) = EtatBalle.position etatBalle in
-      let (dxb,dyb) = EtatBalle.vitesse etatBalle in
-      let (ddxb,ddyb) = EtatBalle.acceleration etatBalle in
-      let xr = EtatRaquette.position etatRaquette in
-      
-      (* La vitesse horizontale de la balle est modifiée selon la zone qu'elle touche  de la raquette : si c'est au centre, vitesse horizontale vaut 0
-      si c'est à gauche, la vitesse horizontale est négative, si c'est à droite, la vitesse horizontale est positive*)
+(* Fonction qui fait rebondir la balle sur la raquette. *)
+(* paramètres:                                                                   *)
+(* etatBalle : etatBalle - Etat de la balle                                      *)
+(* etatRaquette : etatRaquette - Etat de la raquette                             *)
+(* (addAccX, addAccY) : (float * float) - Quantité d'ajout à l'accélération      *)
+let rebond_raquette etatBalle etatRaquette (addAccX, addAccY): etatBalle =
+  let (xb,yb) = EtatBalle.position etatBalle in
+  let (dxb,dyb) = EtatBalle.vitesse etatBalle in
+  let (ddxb,ddyb) = EtatBalle.acceleration etatBalle in
+  let xr = EtatRaquette.position etatRaquette in
 
-      let coeff_direction = (abs_float (xb -. xr))/.(FormeRaquette.longeur/.2.) in
-      let somme_dxb_dyb = abs_float dxb +. abs_float dyb in
-      let new_dxb = 
-        if (xb -. xr) < 0. then
-            -.(somme_dxb_dyb*.coeff_direction)
-        else somme_dxb_dyb*.coeff_direction
-      in
-      EtatBalle.initialiser (xb, yb) (new_dxb, somme_dxb_dyb*.(1.-.coeff_direction)) (ddxb+.addAccX, ddyb+.addAccY)
+  (* La vitesse horizontale de la balle est modifiée selon la zone qu'elle touche de la raquette : *)
+  (* si c'est au centre, vitesse horizontale vaut 0, si c'est à gauche, la vitesse horizontale est négative, *)
+  (* si c'est à droite, la vitesse horizontale est positive *)
+  let coeff_direction = (abs_float (xb -. xr))/.(FormeRaquette.longeur/.2.) in
+  let somme_dxb_dyb = abs_float dxb +. abs_float dyb in
+  let new_dxb =
+    if (xb -. xr) < 0. then
+      -.(somme_dxb_dyb*.coeff_direction)
+    else somme_dxb_dyb*.coeff_direction
+  in
+  EtatBalle.initialiser (xb, yb) (new_dxb, somme_dxb_dyb*.(1.-.coeff_direction)) (ddxb+.addAccX, ddyb+.addAccY)
+
 end
 
 module Jeu = struct
