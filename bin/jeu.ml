@@ -18,25 +18,26 @@ let rec run (etatJeu: etatJeu) (balleCollee:bool) : etatJeu flux =
   else
     let score = EtatJeu.score etatJeu in
     let nbVies = EtatJeu.vies etatJeu in
-    let etatBalle0 = EtatJeu.balle etatJeu in
     let etatBrique = EtatJeu.briques etatJeu in
-    let fluxBalle = (FreeFall.run etatBalle0) in
     let fluxEtatRaquetteBalleCollee = flux_etat_raquette Box.infx Box.supx FormeRaquette.longeur in
-    let fluxJeuBalleCollee = if balleCollee then
       Flux.unless (Flux.map
     (fun raquette ->
-        EtatJeu.initialiser (EtatBalle.initialiser ((EtatRaquette.position raquette),FormeRaquette.hauteur) ParametresBalle.vitesse_initiale ParametresBalle.acceleration_initiale) etatBrique raquette score nbVies
-    ) fluxEtatRaquetteBalleCollee) (fun jeu -> (EtatRaquette.clique (EtatJeu.raquette jeu))) (fun _ -> Flux.vide) 
-    else
-      Flux.vide
-  in
+        EtatJeu.initialiser (EtatBalle.initialiser ((EtatRaquette.position raquette),FormeRaquette.hauteur) (0.,0.) (0.,0.)) etatBrique raquette score nbVies
+    ) fluxEtatRaquetteBalleCollee) (fun jeu -> (not balleCollee || EtatRaquette.clique (EtatJeu.raquette jeu))) 
+
+   (fun etatJeuDecollage ->
     let etatRaquetteFlux = flux_etat_raquette Box.infx Box.supx FormeRaquette.longeur in
+    let etatBalleDecollage = if balleCollee then 
+      (EtatBalle.initialiser (EtatJeu.position_balle etatJeuDecollage) ParametresBalle.vitesse_initiale ParametresBalle.acceleration_initiale )
+    else
+      (EtatJeu.balle etatJeu)
+    in
+    let fluxBalle = (FreeFall.run etatBalleDecollage) in
     let fluxJeu = Flux.map2 
     (fun balle raquette ->
         EtatJeu.initialiser balle etatBrique raquette score nbVies
     )
     fluxBalle etatRaquetteFlux in
-    Flux.append  fluxJeuBalleCollee 
     (Flux.unless_modif fluxJeu GestionBalle.contact 
     (fun etatJeuEvent ->
       let etatBalle = EtatJeu.balle etatJeuEvent in
@@ -64,4 +65,4 @@ let rec run (etatJeu: etatJeu) (balleCollee:bool) : etatJeu flux =
         let nvEtatBalle = GestionBalle.rebond etatBalle (0.5, 0.5) in
         (EtatJeu.initialiser nvEtatBalle etatBrique etatRaquette score nbVies) , false
     )
-    (fun etatJeuNext balleCollee -> run etatJeuNext balleCollee))
+    (fun etatJeuNext balleCollee -> run etatJeuNext balleCollee)))
