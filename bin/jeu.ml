@@ -45,8 +45,8 @@ let rec run (etatJeu: etatJeu) (balleCollee:bool) : etatJeu flux =
       if GestionBalle.contact_sol etatBalle then
         (* Si on touche le sol, on perd une vie et on relance une balle *)
         let positionBalle0 = (EtatRaquette.position etatRaquette,FormeRaquette.hauteur +. ParametresBalle.rayon) in
-        let vitesse0 = (600.,300.) in
-        let acceleration0 = (0.,-90.81) in
+        let vitesse0 = ParametresBalle.vitesse_initiale in
+        let acceleration0 = ParametresBalle.acceleration_initiale in
         let etatBalle = EtatBalle.initialiser positionBalle0 vitesse0 acceleration0 in
         (EtatJeu.initialiser etatBalle etatBrique etatRaquette score (nbVies-1)), true
       else if GestionBalle.contact_raquette etatBalle etatRaquette then

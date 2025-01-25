@@ -1,6 +1,6 @@
 
 module Init = struct
-  let dt = ((1. /. 60.)) (* 60 Hz *)
+  let dt = ((1. /. 120.)) (* 120 Hz *)
 end
 
 module Box = struct
@@ -12,13 +12,13 @@ module Box = struct
 end
 
 module FormeRaquette = struct
-  let hauteur = 15.
+  let hauteur = 25.
   let longeur = 300.
 end
 
 module ParametresBalle = struct
   let rayon = 5.
-  let vitesse_initiale = (600.,300.)
+  let vitesse_initiale = (0.,900.)
   let acceleration_initiale = (0.,-90.81)
 end
 
