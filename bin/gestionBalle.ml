@@ -25,15 +25,28 @@ let contact_1d inf_x sup_x x dx = (x < inf_x && dx < 0.) || (x > sup_x && dx > 0
 (* (xb, yb) : position - la position de la balle                                       *)
 (* (dx, dy) : vitesse - la vitesse de la balle                                         *)
 let getVitesseRebondBrique (((xbr, ybr), w, h, _):brique) ((xb,yb):position) ((dx, dy):vitesse) =
-  if (xbr <= xb && xb <= xbr +. w &&
-      ((ybr -. 20. <= yb && yb <= ybr +. 10.) ||
-      (ybr +. h -. 20. <= yb && yb <= ybr +. h +. 30.)))
-  then
-    (* Si la balle touche une brique horizontalement, on inverse le sens y de la vitesse *)
-    (dx, -. dy)
-  else
-    (* Sinon, on inverse le sens x de la vitesse *)
-    (-. dx, dy)
+  let augmentation = 3. in
+  let ybr = ybr-.augmentation in
+  let xbr = xbr-.augmentation in
+  let w = w +.2.*.augmentation in
+  let h = h +.2.*.augmentation in
+
+  let xb = xb-.xbr in
+  let yb = yb-.ybr in
+
+  let ybr=0. in
+  let xbr=0. in
+
+  (*let diagA = (-.(h/.w)*.xb +. (ybr+.((h/.w))*.xbr)) in
+  let diagB = ((h/.w)*.xb +. ((ybr-.h)-.(h/.w)*.xbr)) in*)
+
+  let diagA = (((h/.2.+.ybr)-.(h+.ybr))/.((xbr+.w/.2.)-.xbr))*.xb +.ybr+.h in
+  let diagB = (((h/.2.+.ybr)-.(ybr))/.((xbr+.w/.2.)-.xbr))*.xb +.ybr in
+
+  if ((yb>diagA && yb>diagB)||(yb<diagA && yb<diagB)) then (dx,-.dy)
+  else  (-.dx, dy)
+  
+
 
 
 (* Fonction qui vérifie si la balle touche la raquette. *)
