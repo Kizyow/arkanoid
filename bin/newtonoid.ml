@@ -7,9 +7,7 @@ open EtatBalle
 open EtatEspaceBrique
 open Brique
 
-(* exemple d'ouvertue d'un tel module de la bibliotheque : *)
-open Jeu
-open Input
+(* ouvre la bibliotheque de modules définis dans bin/ *)
 open ParametresJeu
 
 let graphic_format =
@@ -73,10 +71,6 @@ let draw_state (etat: etatJeu) =
   Graphics.moveto 10 20 ;
   Graphics.draw_string ("Vies : "^(string_of_int (EtatJeu.vies etat)))
 
-
-(* extrait le score courant d'un etat : *)
-let score etat : int = EtatJeu.score etat
-
 let draw flux_etat =
   let rec loop flux_etat last_score =
     match Flux.(uncons flux_etat) with
@@ -88,7 +82,7 @@ let draw flux_etat =
       (* FIN DESSIN ETAT *)
       Graphics.synchronize ();
       Unix.sleepf Init.dt;
-      loop flux_etat' (last_score + score etat)
+      loop flux_etat' (last_score + EtatJeu.score etat)
   in
 
   let score = loop flux_etat 0 in

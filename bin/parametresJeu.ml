@@ -25,5 +25,5 @@ end
 module ParametreBrique = struct
   let nbColonnes = 16
   let nbLignes = 4
-  let espace_entre_briques = false
+  let espace_entre_briques = true
 end
