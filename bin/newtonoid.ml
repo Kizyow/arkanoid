@@ -10,35 +10,7 @@ open Brique
 (* exemple d'ouvertue d'un tel module de la bibliotheque : *)
 open Jeu
 open Input
-
-module Init = struct
-  let dt = ((1. /. 60.)) (* 60 Hz *)
-end
-
-module Box = struct
-  let marge = 10.
-  let infx = 10.
-  let infy = 10.
-  let supx = 790.
-  let supy = 590.
-end
-
-module FormeRaquette = struct
-  let hauteur = 15.
-  let longeur = 300.
-end
-
-module ParametresBalle = struct
-  let rayon = 5.
-  let vitesse_initiale = (600.,300.)
-  let acceleration_initiale = (0.,-90.81)
-end
-
-module ParametreBrique = struct
-  let nbColonnes = 16
-  let nbLignes = 4
-  let espace_entre_briques = false
-end
+open ParametresJeu
 
 let graphic_format =
   Format.sprintf
@@ -130,7 +102,7 @@ let draw flux_etat =
 (* acc_0 = 0; acc_{i+1} = acc_{i} + dt * flux_{i}             *)
 (* paramètres:                                                *)
 (* dt : float                                                 *)
-(* flux : (float * float) Flux.t                              *)
+(* flux : (float * float) flux                              *)
 let integre dt flux =
 (* valeur initiale de l'intégrateur                         *)
 let init = ( 0., 0.) in
@@ -148,7 +120,7 @@ in acc;;
 module FreeFall =
 struct
   let (|+|) (x1,y1) (x2,y2) = x1+.x2,y1+.y2
-  let run : etatBalle -> etatBalle Flux.t = 
+  let run : etatBalle -> etatBalle flux = 
     fun etat0 ->
     let secousseFlux= Flux.constant (0.,0.) in
     let accFlux= Flux.map ((|+|) (EtatBalle.acceleration etat0)) (integre Init.dt secousseFlux) in
@@ -263,7 +235,7 @@ struct
 end
 
 module Jeu = struct
-  let rec run (etatJeu: etatJeu) (balleCollee:bool) : etatJeu Flux.t =
+  let rec run (etatJeu: etatJeu) (balleCollee:bool) : etatJeu flux =
     let nbVies = EtatJeu.vies etatJeu in
     if nbVies < 1 then Flux.vide
     else
