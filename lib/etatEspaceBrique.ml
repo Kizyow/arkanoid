@@ -160,7 +160,7 @@ let rec collision_avec_brique (quadtree : etatEspaceBrique) (xb, yb, rayon) : bo
         collision_avec_brique se (xb, yb, rayon)
       else false
 
-(* Affiche la structure du quadtree sous forme de chaîne de caractères
+(* Affiche la structure du quadtree sous forme de chaîne de caractères (pour debug)
   Paramètres :
   - quadtree : etatEspaceBrique : Le quadtree actuel.
   - nb : int : Le numéro de l'itération pour l'affichage.
@@ -170,7 +170,7 @@ let rec print_quadtree (quadtree : etatEspaceBrique) (nb : int) : string =
   match quadtree with
   | Vide -> "Vide\n"
   | Brique ((x, y), _, _, _) -> "Brick (" ^ (string_of_float x) ^ ";" ^ (string_of_float y) ^ ")\n"
-  | Noeud (rect, no, ne, so, se) ->
+  | Noeud (_, no, ne, so, se) ->
       "Iteration " ^ (string_of_int nb) ^ " = NO: " ^ (print_quadtree no (nb + 1)) ^
       "\nNE: " ^ (print_quadtree ne (nb + 1)) ^
       "\nSO: " ^ (print_quadtree so (nb + 1)) ^
