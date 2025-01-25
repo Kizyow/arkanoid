@@ -1,7 +1,7 @@
 
 (* Définition des types pour les composantes de l'état de la balle *)
 
-(* Définition du type alias position représentant la position de la balle *)
+(* Définition du type position représentant la position de la balle *)
 type position = float * float
 
 (* Définition du type vitesse représentant la vitesse de la balle *)

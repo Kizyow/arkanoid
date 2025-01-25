@@ -1,5 +1,9 @@
+
+(* Définition du type point représentant à partir de ses coordonnées (x,y) *)
 type point = float * float
+(* Définition du type rect représentant un rectangle à partir de ses coordonnées (x, y) et ses dimensions (w, h) *)
 type rect = float * float * float * float
+(* Définition du type brique représentant une brique à partir de ses coordonnées/point (x, y), ses dimensions (w, h) et sa couleur *)
 type brique = point * float * float * string
 
 type t =
@@ -7,7 +11,7 @@ type t =
   | Brique of brique
   | Noeud of rect * t * t * t * t
 
-  (* Fonction pour initialiser l'état de l'espace des briques *)
+(* Fonction pour initialiser l'état de l'espace des briques *)
 let initialiser = Vide
 
 (* Vérifie si un point est à l'intérieur d'un rectangle, y compris sur les bords
@@ -57,91 +61,123 @@ let diviser_rect ((x, y, w, h) : rect) : (rect * rect * rect * rect) =
    - taille : rect : Les dimensions du rectangle représentant le quadtree.
    Valeur de retour :
    - t : Le quadtree mis à jour avec la nouvelle brique ajoutée. *)
-   let rec ajouter_brique (quadtree : t) (brique : brique) (taille : rect) : t =
-    match quadtree with
-    | Vide -> Brique brique (* Si le quadtree est vide, on crée une brique *)
-    | Brique brique_actuelle ->
-        (* Si le quadtree est une brique, on la divise en 4 et 
-           on ajoute la brique existante, puis la nouvelle *)
-        let noeud = Noeud (taille, Vide, Vide, Vide, Vide) in
-        let noeud = ajouter_brique noeud brique_actuelle taille in
-        ajouter_brique noeud brique taille
-    | Noeud (rect, no, ne, so, se) ->
-        (* Si le quadtree est un noeud, on récupère les 4 sous-quadtree et on ajoute la brique
-           dans le sous-quadtree auquelle elle peut appartenir. *)
-        let (q1, q2, q3, q4) = diviser_rect rect in
-        let (x, y), _, _, _ = brique in (* Coordonnées de la brique *)
-        let no' = if contains_sans_bord q1 (x, y) then ajouter_brique no brique q1 else no in
-        let ne' = if contains_sans_bord q2 (x, y) then ajouter_brique ne brique q2 else ne in
-        let so' = if contains_sans_bord q3 (x, y) then ajouter_brique so brique q3 else so in
-        let se' = if contains_sans_bord q4 (x, y) then ajouter_brique se brique q4 else se in
-        Noeud (rect, no', ne', so', se')
-  
-  (* Retire une brique du quadtree
-     Paramètres :
-     - quadtree : t : Le quadtree actuel.
-     - brique : brique : La brique à retirer.
-     Valeur de retour :
-     - t : Le quadtree mis à jour avec la brique retirée (ou inchangé si la brique n'existe pas) . *)
-  let rec retirer_brique (quadtree : t) (brique : brique) : t =
-    match quadtree with
-    | Vide -> Vide (* Si le quadtree est vide, il n'y a rien à supprimer *)
-    | Brique brique_actuelle ->
-        (* Si le quadtree est une brique et qu'elle est la brique à retirer, on met le quadtree à vide *)
-        if brique_actuelle = brique then Vide
-        else quadtree
-    | Noeud (rect, no, ne, so, se) ->
-        (* Si le quadtree est un noeud, on cherche dans quel sous-quadtree la brique peut se trouver *)
-        let (q1, q2, q3, q4) = diviser_rect rect in
-        let (x, y), _, _, _ = brique in (* Coordonnées de la brique *)
-        let no' = if contains_avec_bord q1 (x, y) then retirer_brique no brique else no in
-        let ne' = if contains_avec_bord q2 (x, y) then retirer_brique ne brique else ne in
-        let so' = if contains_avec_bord q3 (x, y) then retirer_brique so brique else so in
-        let se' = if contains_avec_bord q4 (x, y) then retirer_brique se brique else se in
-  
-        match (no', ne', so', se') with
-        | (Vide, Vide, Vide, Vide) -> Vide (* Remplace le noeud par Vide si tous les sous-noeuds sont vides *)
-        | _ -> Noeud (rect, no', ne', so', se') (* Sinon, conserve le noeud avec les sous-noeuds mis à jour *)
-  
-
-let rec query (quadtree : t) (taille : rect) : brique list =
+let rec ajouter_brique (quadtree : t) (brique : brique) (taille : rect) : t =
   match quadtree with
-  | Vide -> [] (* quadtree vide, donc liste vide *)
+  | Vide -> Brique brique (* Si le quadtree est vide, on crée une brique *)
+  | Brique brique_actuelle ->
+      (* Si le quadtree est une brique, on la divise en 4 et 
+          on ajoute la brique existante, puis la nouvelle *)
+      let noeud = Noeud (taille, Vide, Vide, Vide, Vide) in
+      let noeud = ajouter_brique noeud brique_actuelle taille in
+      ajouter_brique noeud brique taille
+  | Noeud (rect, no, ne, so, se) ->
+      (* Si le quadtree est un noeud, on récupère les 4 sous-quadtree et on ajoute la brique
+          dans le sous-quadtree auquelle elle peut appartenir. *)
+      let (q1, q2, q3, q4) = diviser_rect rect in
+      let (x, y), _, _, _ = brique in (* Coordonnées de la brique *)
+      let no' = if contains_sans_bord q1 (x, y) then ajouter_brique no brique q1 else no in
+      let ne' = if contains_sans_bord q2 (x, y) then ajouter_brique ne brique q2 else ne in
+      let so' = if contains_sans_bord q3 (x, y) then ajouter_brique so brique q3 else so in
+      let se' = if contains_sans_bord q4 (x, y) then ajouter_brique se brique q4 else se in
+      Noeud (rect, no', ne', so', se')
+
+(* Retire une brique du quadtree.
+    Paramètres :
+    - quadtree : t : Le quadtree actuel.
+    - brique : brique : La brique à retirer.
+    Valeur de retour :
+    - t : Le quadtree mis à jour avec la brique retirée (ou inchangé si la brique n'existe pas) . *)
+let rec retirer_brique (quadtree : t) (brique : brique) : t =
+  match quadtree with
+  | Vide -> Vide (* Si le quadtree est vide, il n'y a rien à supprimer *)
+  | Brique brique_actuelle ->
+      (* Si le quadtree est une brique et qu'elle est la brique à retirer, on met le quadtree à vide *)
+      if brique_actuelle = brique then Vide
+      else quadtree
+  | Noeud (rect, no, ne, so, se) ->
+      (* Si le quadtree est un noeud, on cherche dans quel sous-quadtree la brique peut se trouver *)
+      let (q1, q2, q3, q4) = diviser_rect rect in
+      let (x, y), _, _, _ = brique in (* Coordonnées de la brique *)
+      let no' = if contains_avec_bord q1 (x, y) then retirer_brique no brique else no in
+      let ne' = if contains_avec_bord q2 (x, y) then retirer_brique ne brique else ne in
+      let so' = if contains_avec_bord q3 (x, y) then retirer_brique so brique else so in
+      let se' = if contains_avec_bord q4 (x, y) then retirer_brique se brique else se in
+
+      match (no', ne', so', se') with
+      | (Vide, Vide, Vide, Vide) -> Vide (* Remplace le noeud par Vide si tous les sous-noeuds sont vides *)
+      | _ -> Noeud (rect, no', ne', so', se') (* Sinon, conserve le noeud avec les sous-noeuds mis à jour *)
+
+(* Recherche toutes les briques dans le quadtree qui intersectent avec un rectangle donné
+Paramètres :
+- quadtree : t : Le quadtree actuel.
+- rectangle : rect : Le rectangle avec lequel on veut vérifier les intersections.
+Valeur de retour :
+- brique list : La liste des briques qui intersectent avec le rectangle donné. *)
+let rec query (quadtree : t) (rectangle : rect) : brique list =
+  match quadtree with
+  | Vide -> [] (* Si le quadtree est vide, retourne une liste vide *)
   | Brique brique ->
-      let (x, y), w, h, _ = brique in (* coordonnées, longueur et hauteur de la brique *)
-      if intersects taille (x, y, w, h) then [brique] (* si taille est en collision avec la brique, alors on retourne la brique *)
+      let (x, y), w, h, _ = brique in (* Coordonnées, largeur et hauteur de la brique *)
+      if intersects rectangle (x, y, w, h) then [brique] (* Si le rectangle intersecte avec la brique, retourne la brique *)
       else []
-  | Noeud (rect, no, ne, so, se) -> (* on cherche la collision si elle existe dans chaque sous-quadtree et on append *)
-      if intersects rect taille then query no taille @ query ne taille @ query so taille @ query se taille
+  | Noeud (rect, no, ne, so, se) ->
+      (* Si le quadtree est un noeud, vérifie les intersections dans chaque sous-quadtree et concatène les résultats *)
+      if intersects rect rectangle then 
+        query no rectangle @ query ne rectangle @ query so rectangle @ query se rectangle
       else []
 
+(* Affiche tous les rectangles du quadtree
+  Paramètres :
+  - quadtree : t : Le quadtree actuel.
+  - taille : rect : Le rectangle représentant le quadtree.
+  Valeur de retour :
+  - rect list : La liste des rectangles du quadtree. *)
 let rec afficher_quadtree (quadtree : t) (taille : rect) : rect list =
   match quadtree with
-  | Vide -> [] (* quadtree vide, donc liste vide *)
-  | Brique _ -> []
-  | Noeud (rect, no, ne, so, se) -> (* on cherche la collision si elle existe dans chaque sous-quadtree et on append *)
-      rect::(afficher_quadtree no taille @ afficher_quadtree ne taille @ afficher_quadtree so taille @ afficher_quadtree se taille)
+  | Vide -> [] (* Si le quadtree est vide, retourne une liste vide *)
+  | Brique _ -> [] (* Si le quadtree est une brique, retourne une liste vide *)
+  | Noeud (rect, no, ne, so, se) ->
+      (* Si le quadtree est un noeud, ajoute le rectangle du noeud et concatène les résultats des sous-quadtrees *)
+      rect :: (afficher_quadtree no taille @ afficher_quadtree ne taille @ afficher_quadtree so taille @ afficher_quadtree se taille)
 
+(* Vérifie si une brique dans le quadtree est en collision avec un cercle donné
+  Paramètres :
+  - quadtree : t : Le quadtree actuel.
+  - xb, yb : float : Les coordonnées du centre du cercle.
+  - rayon : float : Le rayon du cercle.
+  Valeur de retour :
+  - bool : true si une brique est en collision avec le cercle, false sinon. *)
 let rec collision_avec_brique (quadtree : t) (xb, yb, rayon) : bool =
   match quadtree with
-  | Vide -> false (* quadtree vide, donc pas de collision *)
+  | Vide -> false (* Si le quadtree est vide, retourne false *)
   | Brique brique ->
-      let (x, y), w, h, _ = brique in (* coordonnées, longueur et hauteur de la brique *)
-      contains_avec_bord (x -. rayon, y -. rayon, w +. rayon *. 2.0, h +. rayon *. 2.0) (xb, yb)  (* si taille est en collision avec la brique, alors y'a collision *)
-  | Noeud (rect, no, ne, so, se) -> (* on cherche la collision si elle existe dans chaque sous-quadtree et on append *)
-      if contains_avec_bord rect (xb, yb) then 
+      let (x, y), w, h, _ = brique in (* Coordonnées, largeur et hauteur de la brique *)
+      contains_avec_bord (x -. rayon, y -. rayon, w +. rayon *. 2.0, h +. rayon *. 2.0) (xb, yb)
+      (* Vérifie si le cercle est en collision avec la brique *)
+  | Noeud (rect, no, ne, so, se) ->
+      (* Si le quadtree est un noeud, vérifie les collisions dans chaque sous-quadtree *)
+      if contains_avec_bord rect (xb, yb) then
         collision_avec_brique no (xb, yb, rayon) ||
         collision_avec_brique ne (xb, yb, rayon) ||
         collision_avec_brique so (xb, yb, rayon) ||
         collision_avec_brique se (xb, yb, rayon)
       else false
 
+(* Affiche la structure du quadtree sous forme de chaîne de caractères
+  Paramètres :
+  - quadtree : t : Le quadtree actuel.
+  - nb : int : Le numéro de l'itération pour l'affichage.
+  Valeur de retour :
+  - string : La représentation sous forme de chaîne de caractères du quadtree. *)
 let rec print_quadtree (quadtree : t) (nb : int) : string =
   match quadtree with
   | Vide -> "Vide\n"
-  | Brique ((x, y), _, _, _) -> "Brick ("^(string_of_float x)^";"^(string_of_float y)^")\n"
+  | Brique ((x, y), _, _, _) -> "Brick (" ^ (string_of_float x) ^ ";" ^ (string_of_float y) ^ ")\n"
   | Noeud (rect, no, ne, so, se) ->
-    "Iteration "^(string_of_int nb)^" = NO: "^(print_quadtree no (nb+1))^"\nNE: "^(print_quadtree ne (nb+1))^"\nSO: "^(print_quadtree so (nb+1))^"\nSE: "^(print_quadtree se (nb+1))
+      "Iteration " ^ (string_of_int nb) ^ " = NO: " ^ (print_quadtree no (nb + 1)) ^
+      "\nNE: " ^ (print_quadtree ne (nb + 1)) ^
+      "\nSO: " ^ (print_quadtree so (nb + 1)) ^
+      "\nSE: " ^ (print_quadtree se (nb + 1))
 
 
 (* On ajoute une brique dans un quadtree vide *)
