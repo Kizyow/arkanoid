@@ -1,6 +1,5 @@
-type point = float * float
-type rect = float * float * float * float
-type brique = point * float * float * string
+
+open Brique
 
 type etatEspaceBrique
 

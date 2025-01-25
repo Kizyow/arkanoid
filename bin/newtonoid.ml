@@ -5,6 +5,7 @@ open EtatJeu
 open EtatRaquette
 open EtatBalle
 open EtatEspaceBrique
+open Brique
 
 (* exemple d'ouvertue d'un tel module de la bibliotheque : *)
 open Jeu
@@ -31,6 +32,12 @@ module ParametresBalle = struct
   let rayon = 5.
   let vitesse_initiale = (600.,300.)
   let acceleration_initiale = (0.,-90.81)
+end
+
+module ParametreBrique = struct
+  let nbColonnes = 16
+  let nbLignes = 4
+  let espace_entre_briques = false
 end
 
 let graphic_format =
@@ -255,48 +262,6 @@ struct
       EtatBalle.initialiser (xb, yb) (new_dxb, somme_dxb_dyb*.(1.-.coeff_direction)) (ddxb+.addAccX, ddyb+.addAccY)
 end
 
-(* Module proposant des fonctions utilitaire pour gérer l'état des briques dans un cadre de jeu. *)
-module Brique = 
-  struct
-  let brique_separes_par_deux (bounds : rect) =
-    let (x, y, w, h) = bounds in
-    let brick_width = w /. 16.0 in
-    let brick_height = h /. 16.0 in
-  
-    let create_row row =
-      List.init 8 (fun col ->
-        let brick_x = x +. (float_of_int col) *. brick_width *.2.0 in
-        let brick_y = y +. h -. (float_of_int (row + 1)) *. brick_height *.2.0 in
-        let color = match row with
-          | 0 -> "red"
-          | 1 -> "green"
-          | 2 -> "blue"
-          | _ -> "gray"
-        in
-        ((brick_x, brick_y), brick_width, brick_height, color)
-      )
-    in List.concat (List.init 4 create_row)
-
-    let briques_completes (bounds : rect) =
-      let (x, y, w, h) = bounds in
-      let brick_width = w /. 16.0 in
-      let brick_height = h /. 16.0 in
-    
-      let create_row row =
-        List.init 16 (fun col ->
-          let brick_x = x +. (float_of_int col) *. brick_width in
-          let brick_y = y +. h -. (float_of_int (row + 1)) *. brick_height in
-          let color = match row with
-            | 0 -> "red"
-            | 1 -> "green"
-            | 2 -> "blue"
-            | _ -> "gray"
-          in
-          ((brick_x, brick_y), brick_width, brick_height, color)
-        )
-      in List.concat (List.init 4 create_row)
-end
-
 module Jeu = struct
   let rec run (etatJeu: etatJeu) (balleCollee:bool) : etatJeu Flux.t =
     let nbVies = EtatJeu.vies etatJeu in
@@ -363,6 +328,6 @@ let () =
   let etatBalle = EtatBalle.initialiser positionBalle0 ParametresBalle.vitesse_initiale ParametresBalle.acceleration_initiale in
   let taille_jeu = (Box.infx, Box.infy, Box.supx, Box.supy) in
   let etatBrique = EtatEspaceBrique.initialiser in 
-  let etatBrique = (List.fold_left (fun acc b -> ajouter_brique acc b taille_jeu) etatBrique (Brique.briques_completes taille_jeu)) in
+  let etatBrique = (List.fold_left (fun acc b -> ajouter_brique acc b taille_jeu) etatBrique (Brique.creer_briques taille_jeu ParametreBrique.nbColonnes ParametreBrique.nbLignes ParametreBrique.espace_entre_briques)) in
   let etatJeu = (EtatJeu.initialiser etatBalle etatBrique etatRaquette 0 5) in
   draw (Jeu.run etatJeu true)

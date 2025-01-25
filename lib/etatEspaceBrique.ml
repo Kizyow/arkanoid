@@ -1,10 +1,7 @@
 
-(* Définition du type point représentant à partir de ses coordonnées (x,y) *)
-type point = float * float
-(* Définition du type rect représentant un rectangle à partir de ses coordonnées (x, y) et ses dimensions (w, h) *)
-type rect = float * float * float * float
-(* Définition du type brique représentant une brique à partir de ses coordonnées/point (x, y), ses dimensions (w, h) et sa couleur *)
-type brique = point * float * float * string
+open Brique
+
+(* Module représentant l'état d'un espace de briques dans le cadre d'un jeu. *)
 
 type etatEspaceBrique =
   | Vide
