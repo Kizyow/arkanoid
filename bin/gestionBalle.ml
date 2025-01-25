@@ -25,7 +25,7 @@ let contact_1d inf_x sup_x x dx = (x < inf_x && dx < 0.) || (x > sup_x && dx > 0
 (* (xb, yb) : position - la position de la balle                                       *)
 (* (dx, dy) : vitesse - la vitesse de la balle                                         *)
 let getVitesseRebondBrique (((xbr, ybr), w, h, _):brique) ((xb,yb):position) ((dx, dy):vitesse) =
-  let augmentation = 3. in
+  let augmentation = 0. in
   let ybr = ybr-.augmentation in
   let xbr = xbr-.augmentation in
   let w = w +.2.*.augmentation in
@@ -40,7 +40,9 @@ let getVitesseRebondBrique (((xbr, ybr), w, h, _):brique) ((xb,yb):position) ((d
   let diagA = (((h/.2.)-.(h))/.((w/.2.)))*.xb +.h in
   let diagB = (((h/.2.))/.((w/.2.)))*.xb  in
 
-  if ((yb>diagA && yb>diagB)||(yb<diagA && yb<diagB)) then (dx,-.dy)
+  if ((yb>diagA && yb>diagB)||(yb<diagA && yb<diagB))
+    || (-.0.1<=dx && dx<=0.1) then (dx,-.dy)
+  else if (-.0.1<=dy && dy<=0.1) then (-.dx, dy)
   else  (-.dx, dy)
   
 
