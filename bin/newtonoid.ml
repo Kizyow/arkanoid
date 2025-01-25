@@ -7,14 +7,8 @@ open EtatBalle
 open EtatEspaceBrique
 
 (* exemple d'ouvertue d'un tel module de la bibliotheque : *)
-open Game
+open Jeu
 open Input
-
-
-type etatBalle = EtatBalle.t
-type etatJeu = EtatJeu.t
-type etatRaquette = EtatRaquette.t
-type etatEspaceBrique = EtatEspaceBrique.t
 
 module Init = struct
   let dt = ((1. /. 60.)) (* 60 Hz *)
@@ -112,12 +106,10 @@ let draw flux_etat =
       Graphics.clear_graph ();
       (* DESSIN ETAT *)
       draw_state etat;
-      (* Ajouter le texte pour dire le nombre de vie et le score en cours...*)
       (* FIN DESSIN ETAT *)
       Graphics.synchronize ();
       Unix.sleepf Init.dt;
       loop flux_etat' (last_score + score etat)
-    | _ -> assert false
   in
 
   let score = loop flux_etat 0 in
@@ -233,7 +225,7 @@ struct
   let contact_raquette etatBalle etatRaquette = 
     let (xb,yb) = EtatBalle.position etatBalle in
     let xr = EtatRaquette.position etatRaquette in
-    let (dx,dy) = EtatBalle.vitesse etatBalle in
+    let (_,dy) = EtatBalle.vitesse etatBalle in
     let demi_raquette = (FormeRaquette.longeur/. 2.) in
     (xb<=(xr +. demi_raquette)) && (xb>=(xr -. demi_raquette))
       && (yb <= FormeRaquette.hauteur +. ParametresBalle.rayon +. 2.) && (dy<0.)
@@ -362,7 +354,7 @@ module Jeu = struct
         unless (Flux.map
       (fun raquette ->
           EtatJeu.initialiser (EtatBalle.initialiser ((EtatRaquette.position raquette),FormeRaquette.hauteur) ParametresBalle.vitesse_initiale ParametresBalle.acceleration_initiale) etatBrique raquette score nbVies
-      ) fluxEtatRaquetteBalleCollee) (fun jeu -> (EtatRaquette.clique (EtatJeu.raquette jeu))) (fun etatJeu -> Flux.vide) 
+      ) fluxEtatRaquetteBalleCollee) (fun jeu -> (EtatRaquette.clique (EtatJeu.raquette jeu))) (fun _ -> Flux.vide) 
       else
         Flux.vide
     in
@@ -392,7 +384,6 @@ module Jeu = struct
         else if collision_avec_brique etatBrique (x, y, ParametresBalle.rayon) then
           let briques = query etatBrique (x-. ParametresBalle.rayon, y-.ParametresBalle.rayon, ParametresBalle.rayon*.2., ParametresBalle.rayon*.2.) in
           let brique_retiree = List.hd briques in
-          let ((xb, yb), wb, hb, _) = brique_retiree in
           let nvBriques = retirer_brique etatBrique brique_retiree in
           let nvEtatBalle = GestionBalle.rebond_brique etatBalle brique_retiree (0.5, 0.5) in
             (EtatJeu.initialiser nvEtatBalle nvBriques etatRaquette (score+100) nbVies) , false

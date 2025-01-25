@@ -2,12 +2,12 @@ type point = float * float
 type rect = float * float * float * float
 type brique = point * float * float * string
 
-type t
+type etatEspaceBrique
 
-val initialiser : t
+val initialiser : etatEspaceBrique
 
-val ajouter_brique : t -> brique -> rect -> t
-val retirer_brique : t -> brique -> t
-val query: t -> rect -> brique list
-val afficher_quadtree: t -> rect -> rect list
-val collision_avec_brique: t -> (float * float * float) -> bool
+val ajouter_brique : etatEspaceBrique -> brique -> rect -> etatEspaceBrique
+val retirer_brique : etatEspaceBrique -> brique -> etatEspaceBrique
+val query: etatEspaceBrique -> rect -> brique list
+val afficher_quadtree: etatEspaceBrique -> rect -> rect list
+val collision_avec_brique: etatEspaceBrique -> (float * float * float) -> bool

@@ -7,13 +7,13 @@ open EtatRaquette
 type score = int
 and vies = int
 
-type t
-val initialiser : EtatBalle.t -> EtatEspaceBrique.t -> EtatRaquette.t -> score -> vies -> t
-val balle : t -> EtatBalle.t
-val briques : t -> EtatEspaceBrique.t
-val raquette : t -> EtatRaquette.t
-val score : t -> score
-val vies : t -> vies
-val position_balle : t -> position
-val vitesse_balle : t -> vitesse
-val acceleration_balle : t -> acceleration
+type etatJeu
+val initialiser : etatBalle -> etatEspaceBrique -> etatRaquette -> score -> vies -> etatJeu
+val balle : etatJeu -> etatBalle
+val briques : etatJeu -> etatEspaceBrique
+val raquette : etatJeu -> etatRaquette
+val score : etatJeu -> score
+val vies : etatJeu -> vies
+val position_balle : etatJeu -> position
+val vitesse_balle : etatJeu -> vitesse
+val acceleration_balle : etatJeu -> acceleration

@@ -1,22 +1,22 @@
 open Iterator
 
 (* Définition des types pour les composantes de l'état de la raquette *)
-(* Définition du type t représentant l'état de la raquette *)
-type t = float * bool
+(* Définition du type etatRaquette représentant l'état de la raquette *)
+type etatRaquette = float * bool
 
 (* Fonction pour initialiser l'état de la raquette 
    Paramètres :
    - pos : float : La position en X de la raquette.
    - clique : bool : L'état du clic de la souris (true si un bouton est enfoncé, false sinon).
    Valeur de retour :
-   - t : L'état de la raquette créé. *)
-let initialiser pos clique : t = (pos, clique)
+   - etatRaquette : L'état de la raquette créé. *)
+let initialiser pos clique : etatRaquette = (pos, clique)
 
 (* Fonction pour obtenir la position de la raquette à partir de son état *)
-let position ((pos, _) : t) = pos
+let position ((pos, _) : etatRaquette) = pos
 
 (* Fonction pour obtenir l'état du clic de la raquette à partir de son état *)
-let clique ((_, cliq) : t) = cliq
+let clique ((_, cliq) : etatRaquette) = cliq
 
 (* Fonction qui génère un flux d'état de raquette. Une fois exécutée, elle récupère le flux d'état 
   de la souris (à l'aide de la bibliothèque Graphics) et le transforme en flux d'état de raquette.
@@ -25,8 +25,8 @@ let clique ((_, cliq) : t) = cliq
    - borneSupX : float : La limite droite à laquelle la raquette peut se déplacer.
    - longueurRaquette : float : La longueur de la raquette.
   Valeur de retour :
-  - t flux : Un flux d'états de la raquette.*)
-let flux_etat_raquette borneInfX borneSupX longueurRaquette : t flux =
+  - etatRaquette flux : Un flux d'états de la raquette.*)
+let flux_etat_raquette borneInfX borneSupX longueurRaquette : etatRaquette flux =
   (* Flux de la position de la souris *)
   let flux_souris = Flux.unfold
     (fun () ->

@@ -6,10 +6,10 @@ type rect = float * float * float * float
 (* Définition du type brique représentant une brique à partir de ses coordonnées/point (x, y), ses dimensions (w, h) et sa couleur *)
 type brique = point * float * float * string
 
-type t =
+type etatEspaceBrique =
   | Vide
   | Brique of brique
-  | Noeud of rect * t * t * t * t
+  | Noeud of rect * etatEspaceBrique * etatEspaceBrique * etatEspaceBrique * etatEspaceBrique
 
 (* Fonction pour initialiser l'état de l'espace des briques *)
 let initialiser = Vide
@@ -56,12 +56,12 @@ let diviser_rect ((x, y, w, h) : rect) : (rect * rect * rect * rect) =
   )
 (* Ajoute une nouvelle brique dans le quadtree
    Paramètres :
-   - quadtree : t : Le quadtree actuel.
+   - quadtree : etatEspaceBrique : Le quadtree actuel.
    - brique : brique : La brique à ajouter.
    - taille : rect : Les dimensions du rectangle représentant le quadtree.
    Valeur de retour :
-   - t : Le quadtree mis à jour avec la nouvelle brique ajoutée. *)
-let rec ajouter_brique (quadtree : t) (brique : brique) (taille : rect) : t =
+   - etatEspaceBrique : Le quadtree mis à jour avec la nouvelle brique ajoutée. *)
+let rec ajouter_brique (quadtree : etatEspaceBrique) (brique : brique) (taille : rect) : etatEspaceBrique =
   match quadtree with
   | Vide -> Brique brique (* Si le quadtree est vide, on crée une brique *)
   | Brique brique_actuelle ->
@@ -83,11 +83,11 @@ let rec ajouter_brique (quadtree : t) (brique : brique) (taille : rect) : t =
 
 (* Retire une brique du quadtree.
     Paramètres :
-    - quadtree : t : Le quadtree actuel.
+    - quadtree : etatEspaceBrique : Le quadtree actuel.
     - brique : brique : La brique à retirer.
     Valeur de retour :
-    - t : Le quadtree mis à jour avec la brique retirée (ou inchangé si la brique n'existe pas) . *)
-let rec retirer_brique (quadtree : t) (brique : brique) : t =
+    - etatEspaceBrique : Le quadtree mis à jour avec la brique retirée (ou inchangé si la brique n'existe pas) . *)
+let rec retirer_brique (quadtree : etatEspaceBrique) (brique : brique) : etatEspaceBrique =
   match quadtree with
   | Vide -> Vide (* Si le quadtree est vide, il n'y a rien à supprimer *)
   | Brique brique_actuelle ->
@@ -109,11 +109,11 @@ let rec retirer_brique (quadtree : t) (brique : brique) : t =
 
 (* Recherche toutes les briques dans le quadtree qui intersectent avec un rectangle donné
 Paramètres :
-- quadtree : t : Le quadtree actuel.
+- quadtree : etatEspaceBrique : Le quadtree actuel.
 - rectangle : rect : Le rectangle avec lequel on veut vérifier les intersections.
 Valeur de retour :
 - brique list : La liste des briques qui intersectent avec le rectangle donné. *)
-let rec query (quadtree : t) (rectangle : rect) : brique list =
+let rec query (quadtree : etatEspaceBrique) (rectangle : rect) : brique list =
   match quadtree with
   | Vide -> [] (* Si le quadtree est vide, retourne une liste vide *)
   | Brique brique ->
@@ -128,11 +128,11 @@ let rec query (quadtree : t) (rectangle : rect) : brique list =
 
 (* Affiche tous les rectangles du quadtree
   Paramètres :
-  - quadtree : t : Le quadtree actuel.
+  - quadtree : etatEspaceBrique : Le quadtree actuel.
   - taille : rect : Le rectangle représentant le quadtree.
   Valeur de retour :
   - rect list : La liste des rectangles du quadtree. *)
-let rec afficher_quadtree (quadtree : t) (taille : rect) : rect list =
+let rec afficher_quadtree (quadtree : etatEspaceBrique) (taille : rect) : rect list =
   match quadtree with
   | Vide -> [] (* Si le quadtree est vide, retourne une liste vide *)
   | Brique _ -> [] (* Si le quadtree est une brique, retourne une liste vide *)
@@ -142,12 +142,12 @@ let rec afficher_quadtree (quadtree : t) (taille : rect) : rect list =
 
 (* Vérifie si une brique dans le quadtree est en collision avec un cercle donné
   Paramètres :
-  - quadtree : t : Le quadtree actuel.
+  - quadtree : etatEspaceBrique : Le quadtree actuel.
   - xb, yb : float : Les coordonnées du centre du cercle.
   - rayon : float : Le rayon du cercle.
   Valeur de retour :
   - bool : true si une brique est en collision avec le cercle, false sinon. *)
-let rec collision_avec_brique (quadtree : t) (xb, yb, rayon) : bool =
+let rec collision_avec_brique (quadtree : etatEspaceBrique) (xb, yb, rayon) : bool =
   match quadtree with
   | Vide -> false (* Si le quadtree est vide, retourne false *)
   | Brique brique ->
@@ -165,11 +165,11 @@ let rec collision_avec_brique (quadtree : t) (xb, yb, rayon) : bool =
 
 (* Affiche la structure du quadtree sous forme de chaîne de caractères
   Paramètres :
-  - quadtree : t : Le quadtree actuel.
+  - quadtree : etatEspaceBrique : Le quadtree actuel.
   - nb : int : Le numéro de l'itération pour l'affichage.
   Valeur de retour :
   - string : La représentation sous forme de chaîne de caractères du quadtree. *)
-let rec print_quadtree (quadtree : t) (nb : int) : string =
+let rec print_quadtree (quadtree : etatEspaceBrique) (nb : int) : string =
   match quadtree with
   | Vide -> "Vide\n"
   | Brique ((x, y), _, _, _) -> "Brick (" ^ (string_of_float x) ^ ";" ^ (string_of_float y) ^ ")\n"
