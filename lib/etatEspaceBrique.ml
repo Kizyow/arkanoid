@@ -7,30 +7,50 @@ type t =
   | Brique of brique
   | Noeud of rect * t * t * t * t
 
+  (* Fonction pour initialiser l'état de l'espace des briques *)
 let initialiser = Vide
 
-(* Vérifier que le point est dans le rectangle *)
+(* Vérifie si un point est à l'intérieur d'un rectangle, y compris sur les bords
+  Paramètres :
+  - rect : (x, y, w, h) : Le rectangle avec ses coordonnées (x, y) et ses dimensions (w, h).
+  - point : (px, py) : Le point avec ses coordonnées (px, py).
+  Valeur de retour :
+  - bool : true si le point est à l'intérieur du rectangle (y compris sur les bords), false sinon. *)
 let contains ((x, y, w, h) : rect) ((px, py) : point) =
-  px >= x && px <= x +. w &&  py >= y && py <= y +. h
+px >= x && px <= x +. w && py >= y && py <= y +. h
 
-(* Vérifier que le point est dans le rectangle *)
+(* Vérifie si un point est à l'intérieur d'un rectangle, sans inclure les bords
+  Paramètres :
+  - rect : (x, y, w, h) : Le rectangle avec ses coordonnées (x, y) et ses dimensions (w, h).
+  - point : (px, py) : Le point avec ses coordonnées (px, py).
+  Valeur de retour :
+  - bool : true si le point est à l'intérieur du rectangle (sans inclure les bords), false sinon. *)
 let contains_qt ((x, y, w, h) : rect) ((px, py) : point) =
-  px >= x && px < x +. w &&  py >= y && py < y +. h
+px >= x && px < x +. w && py >= y && py < y +. h
 
-(* Vérifier que deux rectangles sont en collision *)
+(* Vérifie si deux rectangles se chevauchent (sont en collision)
+  Paramètres :
+  - rect1 : (x1, y1, w1, h1) : Le premier rectangle avec ses coordonnées (x1, y1) et ses dimensions (w1, h1).
+  - rect2 : (x2, y2, w2, h2) : Le deuxième rectangle avec ses coordonnées (x2, y2) et ses dimensions (w2, h2).
+  Valeur de retour :
+  - bool : true si les deux rectangles se chevauchent, false sinon. *)
 let intersects ((x1, y1, w1, h1) : rect) ((x2, y2, w2, h2) : rect) =
-  not (x1 +. w1 < x2 || x2 +. w2 < x1 || y1 +. h1 < y2 || y2 +. h2 < y1)
+not (x1 +. w1 < x2 || x2 +. w2 < x1 || y1 +. h1 < y2 || y2 +. h2 < y1)
 
-(* Diviser un rectangle en 4 sous rectangle *)
+(* Divise un rectangle en quatre sous-rectangles égaux
+  Paramètres :
+  - rect : (x, y, w, h) : Le rectangle avec ses coordonnées (x, y) et ses dimensions (w, h).
+  Valeur de retour :
+  - (rect * rect * rect * rect) : Un tuple contenant les quatre sous-rectangles (Nord-Ouest, Nord-Est, Sud-Ouest, Sud-Est). *)
 let diviser_rect ((x, y, w, h) : rect) : (rect * rect * rect * rect) =
   let half_w = w /. 2.0 in
   let half_h = h /. 2.0 in
-  ( (x, y +. half_h, half_w, half_h), (* NO *)
-    (x +. half_w, y +. half_h, half_w, half_h), (* NE *)
-    (x, y, half_w, half_h), (* SO *)
-    (x +. half_w, y, half_w, half_h) (* SE *)
+  ( (x, y +. half_h, half_w, half_h), (* Nord-Ouest *)
+    (x +. half_w, y +. half_h, half_w, half_h), (* Nord-Est *)
+    (x, y, half_w, half_h), (* Sud-Ouest *)
+    (x +. half_w, y, half_w, half_h) (* Sud-Est *)
   )
-
+  
 (* Ajouter une nouvelle brique dans le quadtree *)
 let rec ajouter_brique (quadtree : t) (brique : brique) (taille : rect) : t =
   match quadtree with

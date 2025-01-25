@@ -200,27 +200,6 @@ end
                 Some(t,unless_modif q cond elt_modif f_cond))
         )
 
-(* Mettre en place une continuation pour chaque déplacement de souris
-    et chaque touche de bloc pour incrémenter score et exploser bloc ?*)
-  
-    (* Fonction qui génère un flux d'état de raquette. Une fois exécutée, elle récupère le flux d'état 
-      de la souris (à l'aide de la bibliothèque Graphics) et le transforme en flux d'état de raquette.*)
-    let flux_etat_raquette () =
-      let flux_souris = Flux.unfold
-      (fun () ->
-        let x, _ = Graphics.mouse_pos () in
-        Some ((float_of_int x, Graphics.button_down ()), ()))
-      () in 
-      let demi_raquette = (FormeRaquette.longeur /. 2.) in
-      let f = fun (x_souris , b_clique) ->
-        if x_souris -. demi_raquette < Box.infx then
-          (EtatRaquette.initialiser (Box.infx +. demi_raquette) b_clique)
-      else if x_souris +. demi_raquette > Box.supx then
-        (EtatRaquette.initialiser (Box.supx -. demi_raquette) b_clique)
-      else
-        (EtatRaquette.initialiser x_souris b_clique)
-      in Flux.map f flux_souris
-
 (* Module proposant des fonctions utilitaire pour gérer l'état d'une balle dans un cadre de jeu. *)
 module GestionBalle =
 struct
@@ -378,7 +357,7 @@ module Jeu = struct
       let etatBalle0 = EtatJeu.balle etatJeu in
       let etatBrique = EtatJeu.briques etatJeu in
       let fluxBalle = (FreeFall.run etatBalle0) in
-      let fluxEtatRaquetteBalleCollee = flux_etat_raquette () in
+      let fluxEtatRaquetteBalleCollee = flux_etat_raquette Box.infx Box.supx FormeRaquette.longeur in
       let fluxJeuBalleCollee = if balleCollee then
         unless (Flux.map
       (fun raquette ->
@@ -387,7 +366,7 @@ module Jeu = struct
       else
         Flux.vide
     in
-      let etatRaquetteFlux = flux_etat_raquette () in
+      let etatRaquetteFlux = flux_etat_raquette Box.infx Box.supx FormeRaquette.longeur in
       let fluxJeu = Flux.map2 
       (fun balle raquette ->
           EtatJeu.initialiser balle etatBrique raquette score nbVies
