@@ -150,48 +150,6 @@ struct
     Flux.map3 (fun pos vit acc -> EtatBalle.initialiser pos vit acc) positionFlux vitesseFlux accFlux
 end
 
-  (* Fonction qui filtre et transforme les éléments d'un flux en fonction d'une condition *)
-  (* Si un élément satisfait la condition, il est transformé par une fonction donnée.     *)
-  (* Sinon, il est laissé inchangé.                                                       *)
-  (* paramètres:                                                                          *)
-  (* flux : 'a Flux.t                                                                     *)
-  (* cond : 'a -> bool                                                                    *)
-  (* f_cond : 'a -> 'a Flux.t                                                             *)
-  let rec unless : 'a Flux.t-> ('a -> bool) -> ('a -> 'a Flux.t) -> 'a Flux.t =
-    fun flux cond f_cond ->
-      Tick 
-        (lazy
-          (match (Flux.uncons flux) with
-          |None -> None
-          |Some (t,q) ->
-              if (cond t) then
-                Flux.uncons (f_cond t)
-              else
-                Some(t,unless q cond f_cond))
-        )
-
-  (* Fonction qui filtre et transforme les éléments d'un flux en fonction d'une condition *)
-  (* Si un élément satisfait la condition, il est transformé par une fonction donnée et   *)
-  (*    il est transmis à un nouveau générateur de flux.                                  *)
-  (* Sinon, il est laissé inchangé.                                                       *)
-  (* paramètres:                                                                          *)
-  (* flux : 'a Flux.t                                                                     *)
-  (* cond : 'a -> bool                                                                    *)
-  (* f_cond : 'a -> 'a Flux.t                                                             *)
-  let rec unless_modif : 'a Flux.t-> ('a -> bool) -> ('a -> ('a*bool)) -> ('a -> bool -> 'a Flux.t) -> 'a Flux.t =
-    fun flux cond elt_modif f_cond ->
-      Tick 
-        (lazy
-          (match (Flux.uncons flux) with
-          |None -> None
-          |Some (t,q) ->
-              if (cond t) then
-                let newElt, boolVal = (elt_modif t) in
-                Flux.uncons (f_cond newElt boolVal)
-              else
-                Some(t,unless_modif q cond elt_modif f_cond))
-        )
-
 (* Module proposant des fonctions utilitaire pour gérer l'état d'une balle dans un cadre de jeu. *)
 module GestionBalle =
 struct
@@ -351,7 +309,7 @@ module Jeu = struct
       let fluxBalle = (FreeFall.run etatBalle0) in
       let fluxEtatRaquetteBalleCollee = flux_etat_raquette Box.infx Box.supx FormeRaquette.longeur in
       let fluxJeuBalleCollee = if balleCollee then
-        unless (Flux.map
+        Flux.unless (Flux.map
       (fun raquette ->
           EtatJeu.initialiser (EtatBalle.initialiser ((EtatRaquette.position raquette),FormeRaquette.hauteur) ParametresBalle.vitesse_initiale ParametresBalle.acceleration_initiale) etatBrique raquette score nbVies
       ) fluxEtatRaquetteBalleCollee) (fun jeu -> (EtatRaquette.clique (EtatJeu.raquette jeu))) (fun _ -> Flux.vide) 
@@ -365,7 +323,7 @@ module Jeu = struct
       )
       fluxBalle etatRaquetteFlux in
       Flux.append  fluxJeuBalleCollee 
-      (unless_modif fluxJeu GestionBalle.contact 
+      (Flux.unless_modif fluxJeu GestionBalle.contact 
       (fun etatJeuEvent ->
         let etatBalle = EtatJeu.balle etatJeuEvent in
         let etatRaquette = EtatJeu.raquette etatJeuEvent in
