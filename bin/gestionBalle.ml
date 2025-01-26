@@ -34,9 +34,6 @@ let getVitesseRebondBrique (((xbr, ybr), w, h, _):brique) ((xb,yb):position) ((d
   let xb = xb-.xbr in
   let yb = yb-.ybr in
 
-  (*let diagA = (-.(h/.w)*.xb +. (ybr+.((h/.w))*.xbr)) in
-  let diagB = ((h/.w)*.xb +. ((ybr-.h)-.(h/.w)*.xbr)) in*)
-
   let diagA = (((h/.2.)-.(h))/.((w/.2.)))*.xb +.h in
   let diagB = (((h/.2.))/.((w/.2.)))*.xb  in
 

@@ -34,8 +34,7 @@ let integre dt flux =
 (* Construit un flux d'une balle en chute libre à partir de l'état initiale d'une balle.*)
 let run : etatBalle -> etatBalle flux = 
   fun etat0 ->
-  let secousseFlux= Flux.constant (0.,0.) in
-  let accFlux= Flux.map ((|+|) (EtatBalle.acceleration etat0)) (integre Init.dt secousseFlux) in
+  let accFlux= Flux.map ((|+|) (EtatBalle.acceleration etat0)) (integre Init.dt (Flux.constant (0.,0.))) in
   let vitesseFlux = Flux.map ((|+|) (EtatBalle.vitesse etat0)) (integre Init.dt accFlux) in
   let positionFlux = Flux.(map ((|+|) (EtatBalle.position etat0))) (integre Init.dt vitesseFlux) in
   Flux.map3 (fun pos vit acc -> EtatBalle.initialiser pos vit acc) positionFlux vitesseFlux accFlux

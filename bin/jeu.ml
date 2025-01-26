@@ -50,7 +50,7 @@ let gerer_contact_raquette etatJeuEvent etatBrique : etatJeu =
   let etatRaquette = EtatJeu.raquette etatJeuEvent in
   let score = EtatJeu.score etatJeuEvent in
   let nbVies = EtatJeu.vies etatJeuEvent in
-  (* La balle rebondit dans une direction définie par rebond_raquette. Elle gagne en accélération.*)
+  (* La balle rebondit dans une direction définie par rebond_raquette. Elle gagne en vitesse.*)
   let nvEtatBalle = GestionBalle.rebond_raquette etatBalle etatRaquette in
   EtatJeu.initialiser nvEtatBalle etatBrique etatRaquette score nbVies
 
