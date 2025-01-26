@@ -51,7 +51,7 @@ let gerer_contact_raquette etatJeuEvent etatBrique : etatJeu =
   let score = EtatJeu.score etatJeuEvent in
   let nbVies = EtatJeu.vies etatJeuEvent in
   (* La balle rebondit dans une direction définie par rebond_raquette. Elle gagne en accélération.*)
-  let nvEtatBalle = GestionBalle.rebond_raquette etatBalle etatRaquette (0.5, 0.5) in
+  let nvEtatBalle = GestionBalle.rebond_raquette etatBalle etatRaquette in
   EtatJeu.initialiser nvEtatBalle etatBrique etatRaquette score nbVies
 
 (* Fonction qui gère le contact de la balle avec une brique.                                  *)
@@ -70,7 +70,7 @@ let gerer_contact_brique etatJeuEvent etatBrique : etatJeu =
   let brique_retiree = List.hd briques in
   let nvBriques = retirer_brique etatBrique brique_retiree in
   (* La balle rebondit.*)
-  let nvEtatBalle = GestionBalle.rebond_brique etatBalle brique_retiree (0.5, 0.5) in
+  let nvEtatBalle = GestionBalle.rebond_brique etatBalle brique_retiree in
   EtatJeu.initialiser nvEtatBalle nvBriques etatRaquette (score + 100) nbVies 
 
 (* Fonction qui gère le rebond de la balle contre un mur. *)
@@ -83,7 +83,7 @@ let gerer_rebond_mur etatJeuEvent etatBrique =
   let etatRaquette = EtatJeu.raquette etatJeuEvent in
   let score = EtatJeu.score etatJeuEvent in
   let nbVies = EtatJeu.vies etatJeuEvent in
-  let nvEtatBalle = GestionBalle.rebond etatBalle (0.5, 0.5) in
+  let nvEtatBalle = GestionBalle.rebond etatBalle in
   let etatJeu = EtatJeu.initialiser nvEtatBalle etatBrique etatRaquette score nbVies in
   etatJeu
 

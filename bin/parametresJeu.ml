@@ -13,13 +13,18 @@ end
 
 module FormeRaquette = struct
   let hauteur = 25.
-  let longeur = 300.
+  let longeur = 200.
+  (*Désigne la proportion maximale de la direction qu'une balle peut rebondir selon l'axe des x.*)
+  let max_edge_shot = 0.75
 end
 
 module ParametresBalle = struct
   let rayon = 5.
-  let vitesse_initiale = (0.,900.)
-  let acceleration_initiale = (0.,-90.81)
+  let vitesse_initiale = (0.,500.)
+  let acceleration_initiale = (0.,-98.1)
+  let gain_vitesse_touche_brique = 1.01
+  let gain_vitesse_touche_raquette = 1.003
+  let gain_vitesse_touche_mur = 1.003
 end
 
 module ParametreBrique = struct
